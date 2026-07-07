@@ -324,6 +324,7 @@ def classify_3bet(hand):
         return None
     raises = 0
     hero_raised = False
+    opener_pos = None
     tbet_pos = None
     for a in hand["preflop"]:
         if a["verb"] == "post":
@@ -339,10 +340,13 @@ def classify_3bet(hand):
                     act = "4BET"
                 else:
                     return None
-                cont, four = gto.threebet_defense(pos, tbet_pos, hero_raised)
-                mix = gto.cont_mix(pos, tbet_pos, hero_raised)
+                cont, four = gto.threebet_defense(pos, tbet_pos, hero_raised, opener_pos)
+                mix = gto.cont_mix(pos, tbet_pos, hero_raised, opener_pos)
                 in_cont = h169 in cont
-                if h169 in mix:
+                if act == "CALL" and not hero_raised:
+                    # cold player facing a 3-bet: solver is 4-bet-or-fold, never flats
+                    t = "too_loose"
+                elif h169 in mix:
                     t = "ok"  # solver plays this borderline hand both ways
                 elif act == "FOLD" and in_cont:
                     t = "too_tight"
@@ -350,13 +354,17 @@ def classify_3bet(hand):
                     t = "too_loose"
                 else:
                     t = "ok"
-                return {"kind": "3bet", "pos": pos, "tbet": tbet_pos, "hand": h169,
-                        "action": act, "opened": hero_raised,
+                return {"kind": "3bet", "pos": pos, "opener": opener_pos, "tbet": tbet_pos,
+                        "hand": h169, "action": act, "opened": hero_raised,
                         "rec": ("CONTINUE" if in_cont else "FOLD"), "type": t}
             if a["verb"] == "raise":
+                if raises == 0:
+                    opener_pos = pos
                 hero_raised = True; raises += 1
             continue
         if a["verb"] == "raise":
+            if raises == 0:
+                opener_pos = next((sx["pos"] for sx in hand["seats"] if sx["name"] == a["name"]), "?")
             raises += 1
             if raises == 2:
                 tbet_pos = next((sx["pos"] for sx in hand["seats"] if sx["name"] == a["name"]), "?")
@@ -465,7 +473,7 @@ def main():
             replays[hid]["judgement"] = j3 or j
             if j3:
                 threebet.append({"id": hid, "dt": dt, "day": dt[:10], "net": hand["hero_net"],
-                                 "pos": j3["pos"], "tbet": j3["tbet"], "h": j3["hand"],
+                                 "pos": j3["pos"], "op": j3["opener"], "tbet": j3["tbet"], "h": j3["hand"],
                                  "a": j3["action"], "t": j3["type"], "rec": j3["rec"],
                                  "opened": 1 if j3["opened"] else 0})
             hands.append(entry)
@@ -481,18 +489,16 @@ def main():
             vs_defend[hero][op] = {"defend": sorted(d), "threebet": sorted(three), "mix": sorted(mix)}
             vs_freq[hero][op] = gto.vsopen_split(hero, op)
 
-    ALLPOS = ["UTG", "HJ", "CO", "BTN", "SB", "BB"]
+    # Facing a 3-bet: reference charts are keyed (hero, opener, 3-bettor). hero==opener
+    # is "opener facing a 3-bet"; hero!=opener is a cold player (4-bet-or-fold).
     tb_defend = {}
     tb_freq = {}
-    for hero in ALLPOS:
-        tb_defend[hero] = {}
-        tb_freq[hero] = {}
-        for tb in ALLPOS:
-            if hero == tb:
-                continue
-            cont, four = gto.threebet_defense(hero, tb, True)
-            tb_defend[hero][tb] = {"cont": sorted(cont), "fourbet": sorted(four)}
-            tb_freq[hero][tb] = gto.tb_split(hero, tb)
+    for hero, opener, tb in gto.vs3bet_combos():
+        cont, four = gto.threebet_defense(hero, tb, hero == opener, opener)
+        mix = gto.cont_mix(hero, tb, hero == opener, opener)
+        tb_defend.setdefault(hero, {}).setdefault(opener, {})[tb] = {
+            "cont": sorted(cont), "fourbet": sorted(four), "mix": sorted(mix)}
+        tb_freq.setdefault(hero, {}).setdefault(opener, {})[tb] = gto.tb_split(hero, tb, opener)
 
     payload = {
         "generated": datetime.now().strftime("%Y-%m-%d %H:%M"),

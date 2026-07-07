@@ -10,7 +10,7 @@ HJ<->MP transparently. Mixed cells (e.g. raise ~half the time) are tracked so th
 classifier can avoid flagging a borderline hand as a mistake.
 """
 from gto_data import CHARTS
-from screenshot_ranges import SHOT_RFI, SHOT_VSOPEN
+from screenshot_ranges import SHOT_RFI, SHOT_VSOPEN, SHOT_VS3BET
 
 RANKS = "AKQJT98765432"
 RANK_VAL = {r: i for i, r in enumerate(RANKS)}
@@ -129,22 +129,40 @@ def defend_mix(hero_pos, opener_pos):
 
 
 # ---- facing a 3-bet ---------------------------------------------------------
-def threebet_defense(hero_pos, tbet_pos, hero_opened):
+# The reference chart depends on the OPENER as well as the 3-bettor, and on
+# whether Hero is the original opener (who may flat-call the 3-bet) or a cold
+# player (4-bet-or-fold). Screenshot data is keyed SHOT_VS3BET[hero][opener][tbet]
+# with hero==opener meaning "opener facing a 3-bet".
+def _vs3_sets(g):
+    """(continue, fourbet, mix) sets from a screenshot {hand:{r,c,f,a}} split."""
+    cont = {h for h, v in g.items() if v.get("f", 0) < VS_FOLD_HI}
+    four = {h for h, v in g.items() if v.get("r", 0) + v.get("a", 0) >= 50}
+    mix = {h for h, v in g.items() if VS_FOLD_LO <= v.get("f", 0) <= VS_FOLD_HI}
+    return cont, four, mix
+
+
+def threebet_defense(hero_pos, tbet_pos, hero_opened, opener_pos=None):
     """(continue_set, fourbet_set) for Hero facing a single 3-bet."""
+    g = SHOT_VS3BET.get(hero_pos, {}).get(opener_pos, {}).get(tbet_pos)
+    if g:
+        cont, four, _ = _vs3_sets(g)
+        return cont, four
     if hero_opened:
         ch = _chart(hero_pos, "vs-3bet", tbet_pos)
         if ch:
             cont = {h for h, c in ch.items() if _in_range(c)}
             four = {h for h, c in ch.items() if _aggressive(c)}
             return cont, four
-    else:
-        return _CONT_COLD, _4BET
-    # opened but pack missing this pair -> legacy IP/OOP model
-    cont = _CONT_IP if _hero_ip(hero_pos, tbet_pos) else _CONT_OOP
-    return cont, _4BET
+        # opened but pack missing this pair -> legacy IP/OOP model
+        cont = _CONT_IP if _hero_ip(hero_pos, tbet_pos) else _CONT_OOP
+        return cont, _4BET
+    return _CONT_COLD, _4BET
 
 
-def cont_mix(hero_pos, tbet_pos, hero_opened):
+def cont_mix(hero_pos, tbet_pos, hero_opened, opener_pos=None):
+    g = SHOT_VS3BET.get(hero_pos, {}).get(opener_pos, {}).get(tbet_pos)
+    if g:
+        return _vs3_sets(g)[2]
     if hero_opened:
         ch = _chart(hero_pos, "vs-3bet", tbet_pos)
         if ch:
@@ -274,7 +292,10 @@ def vsopen_split(hero_pos, opener_pos):
     return out
 
 
-def tb_split(hero_pos, tbet_pos):
+def tb_split(hero_pos, tbet_pos, opener_pos=None):
+    g = SHOT_VS3BET.get(hero_pos, {}).get(opener_pos, {}).get(tbet_pos)
+    if g:
+        return {h: dict(v) for h, v in g.items()}
     ch = _chart(hero_pos, "vs-3bet", tbet_pos)
     if ch:
         return {h: cell_split(c) for h, c in ch.items() if cell_split(c)}
@@ -283,6 +304,11 @@ def tb_split(hero_pos, tbet_pos):
     for h in cont:
         out[h] = {"r": 100, "c": 0, "f": 0, "a": 0} if h in _4BET else {"r": 0, "c": 100, "f": 0, "a": 0}
     return out
+
+
+def vs3bet_combos():
+    """List of (hero, opener, tbet) spots that have screenshot data."""
+    return [(h, o, t) for h in SHOT_VS3BET for o in SHOT_VS3BET[h] for t in SHOT_VS3BET[h][o]]
 
 
 RANGES, RFI_MIX, RFI_LIMP = _build_rfi()

@@ -118,6 +118,25 @@
   .controls button:disabled{opacity:.4;cursor:default}
   .controls .step{color:var(--mut);font-size:12px;min-width:120px;text-align:center}
   .resnet{font-weight:700}
+  .exrow{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin:2px 0 8px}
+  .exseat{min-width:74px;border:1px solid #2a3340;border-radius:8px;padding:6px 8px;background:#141a22;text-align:center;cursor:pointer;user-select:none}
+  .exseat .p{font-weight:700;font-size:13px}
+  .exseat .s{font-size:11px;margin-top:2px;color:var(--muted)}
+  .exseat.raise{background:#3a1e14;border-color:#b4632b}
+  .exseat.raise .s{color:#ef9a5b}
+  .exseat.tbet{background:#3a1420;border-color:#d0537a}
+  .exseat.tbet .s{color:#f28aad}
+  .exseat.fold{background:#141d2e;border-color:#2f4a7a}
+  .exseat.fold .s{color:#7fa2e0}
+  .exseat.hero{background:#12351f;border-color:#3fb950;box-shadow:0 0 0 1px #3fb95066}
+  .exseat.hero .s{color:#69d98a}
+  .exseat.pending{opacity:.5}
+  .exctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 8px}
+  .exbtn{background:#1b2431;border:1px solid #33414f;color:var(--fg);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px}
+  .exbtn:hover{background:#232f3d}
+  .exbtn.fold{border-color:#2f4a7a}.exbtn.raise{border-color:#b4632b}
+  .exbtn.ghost{background:transparent;color:var(--muted)}
+  .extitle{font-size:14px;font-weight:600;margin:4px 0}
 </style></head>
 <body>
 <header>
@@ -135,27 +154,18 @@
 </header>
 <div class="wrap">
   <div class="toptabs">
-    <div class="toptab active" data-t="leaks">Preflop leaks</div>
-    <div class="toptab" data-t="facing">Facing a raise</div>
-    <div class="toptab" data-t="threebet">3-bet pots</div>
+    <div class="toptab active" data-t="preflop">Preflop (GTO)</div>
     <div class="toptab" data-t="results">Biggest wins &amp; losses</div>
     <div class="toptab" data-t="showdown">Showdowns</div>
     <div class="toptab" data-t="holecards">Hole cards</div>
   </div>
 
-  <div id="pane-leaks">
+  <div id="pane-preflop">
     <div class="cards" id="cards"></div>
     <details><summary>Day-by-day trend (are you improving?)</summary><div id="daytrend"></div></details>
-    <h3 style="font-size:15px;margin:6px 0">RFI charts <span class="sub">(open-raise or fold, pot unopened — click a cell to replay an example)</span></h3>
-    <div class="tabs" id="tabs"></div>
-    <div class="legend">
-      <span><i class="sw" style="background:var(--raise)"></i> raise</span>
-      <span><i class="sw" style="background:var(--call)"></i> limp/call (SB)</span>
-      <span><i class="sw" style="background:var(--allin)"></i> all-in</span>
-      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
-      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
-      <span>cell width = GTO frequency; number = your raise/fold/limp counts</span>
-    </div>
+    <h3 style="font-size:15px;margin:10px 0 4px">Build the spot <span class="sub">(set each player's action — fold or raise — up to a 3-bet; the highlighted seat is you)</span></h3>
+    <div id="exbuild"></div>
+    <div class="legend" id="exlegend"></div>
     <div class="gridwrap"><div id="grid"></div></div>
     <div class="sec">
       <h3 style="font-size:15px">Hands you played against GTO <span class="sub">(click a row to replay)</span></h3>
@@ -170,37 +180,6 @@
         <th data-k="rec">GTO</th><th data-k="t">Type</th><th data-k="net">Result</th><th data-k="dt">When</th><th></th>
       </tr></thead><tbody id="flagbody"></tbody></table>
     </div>
-  </div>
-
-  <div id="pane-facing" class="hidden">
-    <div class="cards" id="vscards"></div>
-    <h3 style="font-size:15px;margin:6px 0">Facing a raise <span class="sub">(one raiser before you — click a cell to replay an example)</span></h3>
-    <div class="tabs" id="vstabs"></div>
-    <div class="filters"><select id="vsopener"></select><span class="sub" id="vsmeta"></span></div>
-    <div class="legend">
-      <span><i class="sw" style="background:var(--raise)"></i> 3-bet</span>
-      <span><i class="sw" style="background:var(--call)"></i> call</span>
-      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
-      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
-      <span>cell width = GTO frequency; number = your 3bet/call/fold counts</span>
-    </div>
-    <div class="gridwrap"><div id="vsgrid"></div></div>
-  </div>
-
-  <div id="pane-threebet" class="hidden">
-    <div class="cards" id="tbcards"></div>
-    <h3 style="font-size:15px;margin:6px 0">3-bet pots <span class="sub">(you faced a single 3-bet — fold / call / 4-bet; click a cell to replay)</span></h3>
-    <div class="tabs" id="tbtabs"></div>
-    <div class="filters"><select id="tbopener"></select><span class="sub" id="tbmeta"></span></div>
-    <div class="legend">
-      <span><i class="sw" style="background:var(--raise)"></i> 4-bet</span>
-      <span><i class="sw" style="background:var(--allin)"></i> all-in</span>
-      <span><i class="sw" style="background:var(--call)"></i> call/continue</span>
-      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
-      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
-      <span>cell width = GTO frequency; number = your 4bet/call/fold counts</span>
-    </div>
-    <div class="gridwrap"><div id="tbgrid"></div></div>
   </div>
 
   <div id="pane-results" class="hidden">
@@ -333,14 +312,14 @@ function recFor(h){if(h.k==="T")return h.rec==="CONTINUE"?"Continue":"Fold";
   const ds=new Set(vsDef(h.pos,h.op).defend);return ds.has(h.h)?"DEFEND":"FOLD";}
 function exampleListRFI(pos,hand){return A.hs.filter(h=>h.k==="R"&&h.pos===pos&&h.h===hand).sort((a,b)=>b.ts-a.ts).map(h=>h.id);}
 function exampleListVs(hero,op,hand){return A.hs.filter(h=>h.k==="V"&&h.pos===hero&&h.op===op&&h.h===hand).sort((a,b)=>b.ts-a.ts).map(h=>h.id);}
-function exampleListTB(hero,tb,hand){return A.tbRows.filter(x=>x.pos===hero&&x.tbet===tb&&x.h===hand).sort((a,b)=>b.ts-a.ts).map(x=>x.id);}
-function tbDef(h,t){return (DATA.tb_defend[h]||{})[t]||{cont:[],fourbet:[]};}
+function exampleListTB(hero,op,tb,hand){return A.tbRows.filter(x=>x.pos===hero&&x.op===op&&x.tbet===tb&&x.h===hand).sort((a,b)=>b.ts-a.ts).map(x=>x.id);}
+function tbDef(h,op,t){return (((DATA.tb_defend[h]||{})[op])||{})[t]||{cont:[],fourbet:[],mix:[]};}
 function computeTB(rows){const g={};
-  rows.forEach(x=>{(g[x.pos]=g[x.pos]||{});(g[x.pos][x.tbet]=g[x.pos][x.tbet]||{cells:{},spots:0,devs:0});
-    const M=g[x.pos][x.tbet];const c=M.cells[x.h]||(M.cells[x.h]={ca:0,fb:0,f:0,dev:0});
+  rows.forEach(x=>{const P=g[x.pos]||(g[x.pos]={});const O=P[x.op]||(P[x.op]={});const M=O[x.tbet]||(O[x.tbet]={cells:{},spots:0,devs:0});
+    const c=M.cells[x.h]||(M.cells[x.h]={ca:0,fb:0,f:0,dev:0});
     if(x.a==="CALL")c.ca++;else if(x.a==="4BET")c.fb++;else c.f++;
     M.spots++;if(x.t!=="ok"){c.dev++;M.devs++;}});
-  for(const h in g)for(const t in g[h]){const M=g[h][t];M.rate=M.spots?100*M.devs/M.spots:0;}
+  for(const h in g)for(const o in g[h])for(const t in g[h][o]){const M=g[h][o][t];M.rate=M.spots?100*M.devs/M.spots:0;}
   return g;}
 function computeHole(hs){const g={};
   (holeMode==="vp"?hs.filter(h=>h.vp):hs).forEach(h=>{const o=g[h.h]||(g[h.h]={count:0,net:0,best:null,worst:null});
@@ -364,7 +343,7 @@ function recompute(){const hs=F();A.hs=hs;
 function renderCards(){
   let rs=0,rd=0;RFIPOS.forEach(p=>{rs+=A.rsum[p].spots;rd+=A.rsum[p].devs;});
   let vs=0,vd=0;for(const hero in A.vs)for(const op in A.vs[hero]){vs+=A.vs[hero][op].spots;vd+=A.vs[hero][op].devs;}
-  let ts=0,tdv=0;for(const h in A.tb)for(const t in A.tb[h]){ts+=A.tb[h][t].spots;tdv+=A.tb[h][t].devs;}
+  let ts=0,tdv=0;for(const h in A.tb)for(const o in A.tb[h])for(const t in A.tb[h][o]){ts+=A.tb[h][o][t].spots;tdv+=A.tb[h][o][t].devs;}
   document.getElementById("cards").innerHTML=[
     ["Hands (range)",A.hs.length],["RFI spots",rs],["RFI dev.",rs?rd+" ("+(100*rd/rs).toFixed(0)+"%)":"-"],
     ["Facing-raise spots",vs],["Facing dev.",vs?vd+" ("+(100*vd/vs).toFixed(0)+"%)":"-"],
@@ -382,96 +361,94 @@ function renderDayTrend(){const d=A.day,days=Object.keys(d).sort();
   document.querySelectorAll("#daytrend tr[data-day]").forEach(tr=>tr.onclick=()=>{
     range={from:tr.dataset.day,to:tr.dataset.day};document.querySelectorAll(".drbtn").forEach(x=>x.classList.remove("active"));
     document.getElementById("dfrom").value=tr.dataset.day;document.getElementById("dto").value=tr.dataset.day;rerenderAll();});}
-let curPos=RFIPOS[0];
-function renderRfiTabs(){document.getElementById("tabs").innerHTML=RFIPOS.map(p=>{const s=A.rsum[p];
-  return `<div class="tab ${p===curPos?'active':''}" data-p="${p}">${p}<span class="r">${s.spots} spots - ${s.rate.toFixed(0)}% off</span></div>`;}).join("");
-  document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>{curPos=t.dataset.p;renderRfiTabs();renderRfiGrid();});}
-function cellColor(g,t){if(t===0)return g==="RAISE"?"#17351f":g==="MIX"?"#2b2717":"#191f27";return g==="RAISE"?"var(--raise)":g==="MIX"?"#b8860b":"var(--fold)";}
-function renderRfiGrid(){const g=A.rgrid[curPos];let h='<table class="grid">';
-  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
-    const c=g[hd]||{r:0,f:0,l:0,dev:0};const ga=gtoRFI(curPos,hd);const t=c.r+c.f+c.l;
-    const gs=gtoSplit(DATA.rfi_freq[curPos],hd);
-    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=t>0?`<div class="cnt">${c.r}/${c.f}${c.l?("/"+c.l):""}</div>`:"";
-    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your raise ${c.r}, fold ${c.f}, limp ${c.l}${t?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
+// ---- combined preflop explorer (RFI / facing an open / facing a 3-bet) ----
+const SEATS=["UTG","HJ","CO","BTN","SB","BB"];
+const DEVLEG='<span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>';
+const LEG_RFI='<span><i class="sw" style="background:var(--raise)"></i> raise</span><span><i class="sw" style="background:var(--call)"></i> limp</span><span><i class="sw" style="background:var(--allin)"></i> all-in</span><span><i class="sw" style="background:var(--fold)"></i> fold</span>'+DEVLEG+'<span>width = GTO freq; number = your raise/fold/limp</span>';
+const LEG_VS='<span><i class="sw" style="background:var(--raise)"></i> 3-bet</span><span><i class="sw" style="background:var(--call)"></i> call</span><span><i class="sw" style="background:var(--fold)"></i> fold</span>'+DEVLEG+'<span>width = GTO freq; number = your 3bet/call/fold</span>';
+const LEG_TB='<span><i class="sw" style="background:var(--raise)"></i> 4-bet</span><span><i class="sw" style="background:var(--allin)"></i> all-in</span><span><i class="sw" style="background:var(--call)"></i> call/continue</span><span><i class="sw" style="background:var(--fold)"></i> fold</span>'+DEVLEG+'<span>width = GTO freq; number = your 4bet/call/fold</span>';
+let EX=[];   // ordered action history [{pos, act:'fold'|'raise'}] building the line
+function exActor(hist){
+  const acted=hist.map(h=>h.pos),folded=new Set(),raisers=[];
+  hist.forEach(h=>h.act==='fold'?folded.add(h.pos):raisers.push(h.pos));
+  const numR=raisers.length,after=(p,q)=>SEATS.indexOf(p)>SEATS.indexOf(q);
+  if(numR>=3)return {actor:null,numR,raisers};
+  if(numR===0){for(const p of SEATS)if(!acted.includes(p))return {actor:p,numR,raisers};return {actor:null,numR,raisers};}
+  if(numR===1){for(const p of SEATS)if(after(p,raisers[0])&&!acted.includes(p))return {actor:p,numR,raisers};return {actor:null,numR,raisers};}
+  const o=raisers[0],t=raisers[1];
+  for(const p of SEATS)if(after(p,t)&&!acted.includes(p))return {actor:p,numR,raisers};
+  if(!folded.has(o)&&hist.filter(h=>h.pos===o).length<2)return {actor:o,numR,raisers};
+  return {actor:null,numR,raisers};
+}
+function exSpot(){const s=exActor(EX);if(!s.actor)return {type:null,actor:null};
+  if(s.numR===0)return RFIPOS.includes(s.actor)?{type:"R",actor:s.actor}:{type:null,actor:s.actor};
+  if(s.numR===1)return {type:"V",actor:s.actor,opener:s.raisers[0]};
+  return {type:"T",actor:s.actor,opener:s.raisers[0],tbet:s.raisers[1]};}
+function exAct(act){const s=exActor(EX);if(s.actor){EX.push({pos:s.actor,act});renderExplorer();}}
+function exReset(){EX=[];renderExplorer();}
+function exTruncateAt(pos){const i=EX.findIndex(h=>h.pos===pos);if(i>=0){EX=EX.slice(0,i);renderExplorer();}}
+function exJumpTo(pos){ // click a seat: decided -> redo from there; pending ahead -> fold to it
+  if(EX.some(h=>h.pos===pos)){exTruncateAt(pos);return;}
+  let guard=0;while(guard++<12){const s=exActor(EX);if(!s.actor||s.actor===pos)break;EX.push({pos:s.actor,act:'fold'});}
+  renderExplorer();}
+function renderSeatStrip(){const s=exActor(EX),actor=s.actor,raisers=s.raisers,actMap={};
+  EX.forEach(h=>{actMap[h.pos]=h.act;});
+  const strip=SEATS.map(p=>{let cls='exseat',sub='·';
+    if(p===actor){cls+=' hero';sub='YOU';}
+    else if(actMap[p]==='raise'){const isT=raisers.length>=2&&raisers[1]===p;cls+=isT?' tbet':' raise';sub=isT?'3-BET':(raisers[0]===p?'OPEN':'RAISE');}
+    else if(actMap[p]==='fold'){cls+=' fold';sub='fold';}
+    else cls+=' pending';
+    return `<div class="${cls}" data-p="${p}"><div class="p">${p}</div><div class="s">${sub}</div></div>`;}).join("");
+  let ctl='<div class="exctl">';
+  if(s.actor){const rl=s.numR===0?'Open':s.numR===1?'3-bet':'4-bet';
+    ctl+=`<span class="sub"><b>${s.actor}</b> to act:</span><button class="exbtn fold" id="exfold">Fold</button><button class="exbtn raise" id="exraise">${rl}</button>`;}
+  else ctl+='<span class="sub">Line closed (a 4-bet, or folded through). Reset or edit a seat.</span>';
+  ctl+='<button class="exbtn ghost" id="exreset">Reset to UTG</button><span class="sub">— click a decided seat to redo from there</span></div>';
+  document.getElementById("exbuild").innerHTML=`<div class="exrow">${strip}</div>`+ctl;
+  document.querySelectorAll("#exbuild .exseat").forEach(el=>el.onclick=()=>exJumpTo(el.dataset.p));
+  const fb=document.getElementById("exfold"),rb=document.getElementById("exraise");
+  if(fb)fb.onclick=()=>exAct('fold');if(rb)rb.onclick=()=>exAct('raise');
+  document.getElementById("exreset").onclick=exReset;}
+function renderExplorer(){
+  if(!exSpot().type&&EX.some(h=>h.pos==='BB'&&h.act==='fold')){EX=[];}  // whole table folded (incl. BB) -> back to UTG
+  renderSeatStrip();const sp=exSpot();
+  const grid=document.getElementById("grid"),leg=document.getElementById("exlegend");
+  if(!sp.type){leg.innerHTML='';
+    grid.innerHTML='<p class="sub" style="padding:12px">No GTO chart for this line — set the actions above to reach an open, a facing-a-raise, or a facing-a-3-bet spot (data goes up to facing one 3-bet).</p>';return;}
+  renderExGrid(sp);}
+function renderExGrid(sp){let splitMap,getCell,ex,meta,title,legtxt;
+  if(sp.type==="R"){const g=A.rgrid[sp.actor]||{},M=A.rsum[sp.actor];splitMap=DATA.rfi_freq[sp.actor];legtxt=LEG_RFI;
+    getCell=hd=>{const c=g[hd]||{r:0,f:0,l:0,dev:0};return {tot:c.r+c.f+c.l,dev:c.dev||0,cnt:`${c.r}/${c.f}${c.l?'/'+c.l:''}`,tip:`your raise ${c.r}, fold ${c.f}, limp ${c.l}`};};
+    ex=hd=>exampleListRFI(sp.actor,hd);title=`RFI — <b>${sp.actor}</b> first in (open-raise or fold)`;meta=`${M.spots} spots · ${M.rate.toFixed(0)}% deviation`;}
+  else if(sp.type==="V"){const M=(A.vs[sp.actor]||{})[sp.opener]||{cells:{},spots:0,rate:0};splitMap=(DATA.vs_freq[sp.actor]||{})[sp.opener];legtxt=LEG_VS;
+    getCell=hd=>{const c=M.cells[hd]||{c:0,t:0,f:0,dev:0};return {tot:c.c+c.t+c.f,dev:c.dev||0,cnt:`${c.t}/${c.c}/${c.f}`,tip:`your 3bet ${c.t}, call ${c.c}, fold ${c.f}`};};
+    ex=hd=>exampleListVs(sp.actor,sp.opener,hd);title=`Facing an open — <b>${sp.actor}</b> vs <b>${sp.opener}</b> raise`;meta=`${M.spots} spots · ${(M.rate||0).toFixed(0)}% deviation`;}
+  else{const M=(((A.tb[sp.actor]||{})[sp.opener])||{})[sp.tbet]||{cells:{},spots:0,rate:0};splitMap=(((DATA.tb_freq[sp.actor]||{})[sp.opener])||{})[sp.tbet];legtxt=LEG_TB;
+    getCell=hd=>{const c=M.cells[hd]||{ca:0,fb:0,f:0,dev:0};return {tot:c.ca+c.fb+c.f,dev:c.dev||0,cnt:`${c.fb}/${c.ca}/${c.f}`,tip:`your 4bet ${c.fb}, call ${c.ca}, fold ${c.f}`};};
+    ex=hd=>exampleListTB(sp.actor,sp.opener,sp.tbet,hd);
+    const who=sp.actor===sp.opener?`<b>${sp.actor}</b> (opener) facing a <b>${sp.tbet}</b> 3-bet`:`<b>${sp.actor}</b> cold vs <b>${sp.opener}</b> open + <b>${sp.tbet}</b> 3-bet`;
+    title=`Facing a 3-bet — ${who}`;meta=`${M.spots} spots · ${(M.rate||0).toFixed(0)}% deviation`;}
+  document.getElementById("exlegend").innerHTML=legtxt+`<span class="sub">· ${meta}</span>`;
+  let h=`<div class="extitle">${title}</div><table class="grid">`;
+  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j),cell=getCell(hd),gs=gtoSplit(splitMap,hd);
+    const badge=cell.dev>0?`<div class="devbadge">${cell.dev}</div>`:"",cn=cell.tot>0?`<div class="cnt">${cell.cnt}</div>`:"";
+    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | ${cell.tip}${cell.tot?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
     h+="</tr>";}h+="</table>";const el=document.getElementById("grid");el.innerHTML=h;
-  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListRFI(curPos,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
+  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=ex(td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
 let fsk="dt",fsd=-1;
 function renderFlags(){const fp=document.getElementById("fpos").value,fs=document.getElementById("fspot").value,ft=document.getElementById("ftype").value;
   let rows=A.flagged.filter(r=>(!fp||r.pos===fp)&&(!fs||r.k===fs)&&(!ft||r.t===ft));
   rows.sort((a,b)=>{let x=a[fsk],y=b[fsk];if(fsk==="net"){x=+x;y=+y;}return(x>y?1:x<y?-1:0)*fsd;});
   document.getElementById("flagbody").innerHTML=rows.slice(0,600).map(r=>{
-    const spot=r.k==="R"?`RFI ${r.pos}`:r.k==="T"?`${r.pos} vs ${r.tbet} 3-bet`:`${r.pos} vs ${r.op}`;
+    const spot=r.k==="R"?`RFI ${r.pos}`:r.k==="T"?`${r.pos}: ${r.op} open, ${r.tbet} 3-bet`:`${r.pos} vs ${r.op}`;
     return `<tr data-id="${r.id}"><td>${spot}</td><td class="lbl">${r.h}</td><td>${r.a}</td><td>${recFor(r)}</td>`+
       `<td><span class="pill t-${r.t}">${TLABEL[r.t]}</span></td><td class="mono ${r.net>=0?'pos':'neg'}">${fmt(r.net)}</td>`+
       `<td class="mono sub">${r.dt.replace("T"," ").slice(0,16)}</td><td class="play">&#9654;</td></tr>`;}).join("");
   const _fids=rows.slice(0,600).map(r=>r.id);
   document.querySelectorAll("#flagbody tr").forEach(tr=>tr.onclick=()=>openReplay(tr.dataset.id,_fids));
   document.getElementById("fcount").textContent=`${rows.length} deviations`+(rows.length>600?" (showing 600)":"");}
-document.querySelectorAll("#pane-leaks table.list th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(!k)return;if(k===fsk)fsd*=-1;else{fsk=k;fsd=1;}renderFlags();});
+document.querySelectorAll("#pane-preflop table.list th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(!k)return;if(k===fsk)fsd*=-1;else{fsk=k;fsd=1;}renderFlags();});
 ["fpos","fspot","ftype"].forEach(id=>document.getElementById(id).onchange=renderFlags);
-
-// facing tab
-let vsHero=null,vsOpener=null;
-function renderFacing(){const heroes=Object.keys(A.vs).sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
-  let rs=0,rd=0;for(const hero in A.vs)for(const op in A.vs[hero]){rs+=A.vs[hero][op].spots;rd+=A.vs[hero][op].devs;}
-  document.getElementById("vscards").innerHTML=[["Facing-raise spots",rs],["Deviations",rd],["Deviation rate",rs?(100*rd/rs).toFixed(1)+"%":"-"]]
-    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono">${c[1]}</div></div>`).join("");
-  if(!heroes.length){document.getElementById("vstabs").innerHTML="";document.getElementById("vsopener").innerHTML="";
-    document.getElementById("vsgrid").innerHTML='<p class="sub">No facing-a-raise spots in this period.</p>';document.getElementById("vsmeta").textContent="";return;}
-  if(!vsHero||!A.vs[vsHero])vsHero=heroes[0];
-  document.getElementById("vstabs").innerHTML=heroes.map(hp=>{const sp=Object.values(A.vs[hp]).reduce((a,m)=>a+m.spots,0);
-    return `<div class="tab ${hp===vsHero?'active':''}" data-h="${hp}">${hp}<span class="r">${sp} spots</span></div>`;}).join("");
-  document.querySelectorAll("#vstabs .tab").forEach(t=>t.onclick=()=>{vsHero=t.dataset.h;vsOpener=null;renderFacing();});
-  let ops=Object.keys(A.vs[vsHero]);
-  if(!vsOpener||!ops.includes(vsOpener))vsOpener=ops.slice().sort((a,b)=>A.vs[vsHero][b].spots-A.vs[vsHero][a].spots)[0];
-  ops=ops.sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
-  const sel=document.getElementById("vsopener");
-  sel.innerHTML=ops.map(o=>`<option value="${o}" ${o===vsOpener?'selected':''}>vs ${o} open (${A.vs[vsHero][o].spots} spots)</option>`).join("");
-  sel.onchange=()=>{vsOpener=sel.value;renderVsGrid();};renderVsGrid();}
-function vsCellColor(cls,t){if(t===0)return cls==="t"?"#2a1c12":cls==="c"?"#141d2e":"#191f27";return cls==="t"?"#b4632b":cls==="c"?"#2f6feb":"var(--fold)";}
-function renderVsGrid(){const M=A.vs[vsHero][vsOpener],R=vsDef(vsHero,vsOpener);
-  const defend=new Set(R.defend),three=new Set(R.threebet);
-  document.getElementById("vsmeta").textContent=`${M.spots} spots · ${M.rate.toFixed(0)}% deviation · GTO defends ${defend.size} combos (${three.size} as 3-bet)`;
-  let h='<table class="grid">';
-  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
-    const c=M.cells[hd]||{c:0,t:0,f:0,dev:0};const tot=c.c+c.t+c.f;
-    const cls=three.has(hd)?"t":defend.has(hd)?"c":"f";const g=cls==="t"?"3-bet":cls==="c"?"call":"fold";
-    const gs=gtoSplit((DATA.vs_freq[vsHero]||{})[vsOpener],hd);
-    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=tot>0?`<div class="cnt">${c.t}/${c.c}/${c.f}</div>`:"";
-    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your 3bet ${c.t}, call ${c.c}, fold ${c.f}${tot?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
-    h+="</tr>";}h+="</table>";const el=document.getElementById("vsgrid");el.innerHTML=h;
-  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListVs(vsHero,vsOpener,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
-
-// 3-bet pots tab
-let tbHero=null,tbTbet=null;
-function renderThreebet(){const heroes=Object.keys(A.tb).sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
-  let rs=0,rd=0;for(const h in A.tb)for(const t in A.tb[h]){rs+=A.tb[h][t].spots;rd+=A.tb[h][t].devs;}
-  document.getElementById("tbcards").innerHTML=[["3-bet spots",rs],["Deviations",rd],["Deviation rate",rs?(100*rd/rs).toFixed(1)+"%":"-"]]
-    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono">${c[1]}</div></div>`).join("");
-  if(!heroes.length){document.getElementById("tbtabs").innerHTML="";document.getElementById("tbopener").innerHTML="";
-    document.getElementById("tbgrid").innerHTML='<p class="sub">No 3-bet spots in this period.</p>';document.getElementById("tbmeta").textContent="";return;}
-  if(!tbHero||!A.tb[tbHero])tbHero=heroes[0];
-  document.getElementById("tbtabs").innerHTML=heroes.map(hp=>{const sp=Object.values(A.tb[hp]).reduce((a,m)=>a+m.spots,0);
-    return `<div class="tab ${hp===tbHero?'active':''}" data-h="${hp}">${hp}<span class="r">${sp} spots</span></div>`;}).join("");
-  document.querySelectorAll("#tbtabs .tab").forEach(t=>t.onclick=()=>{tbHero=t.dataset.h;tbTbet=null;renderThreebet();});
-  let ops=Object.keys(A.tb[tbHero]);
-  if(!tbTbet||!ops.includes(tbTbet))tbTbet=ops.slice().sort((a,b)=>A.tb[tbHero][b].spots-A.tb[tbHero][a].spots)[0];
-  ops=ops.sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
-  const sel=document.getElementById("tbopener");
-  sel.innerHTML=ops.map(o=>`<option value="${o}" ${o===tbTbet?'selected':''}>vs ${o} 3-bettor (${A.tb[tbHero][o].spots} spots)</option>`).join("");
-  sel.onchange=()=>{tbTbet=sel.value;renderTbGrid();};renderTbGrid();}
-function renderTbGrid(){const M=A.tb[tbHero][tbTbet],R=tbDef(tbHero,tbTbet);
-  const cont=new Set(R.cont),four=new Set(R.fourbet);
-  document.getElementById("tbmeta").textContent=`${M.spots} spots · ${M.rate.toFixed(0)}% deviation · GTO continues ${cont.size} combos (${four.size} as 4-bet)`;
-  let h='<table class="grid">';
-  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
-    const c=M.cells[hd]||{ca:0,fb:0,f:0,dev:0};const tot=c.ca+c.fb+c.f;
-    const cls=four.has(hd)?"t":cont.has(hd)?"c":"f";const g=cls==="t"?"4-bet":cls==="c"?"call":"fold";
-    const gs=gtoSplit((DATA.tb_freq[tbHero]||{})[tbTbet],hd);
-    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=tot>0?`<div class="cnt">${c.fb}/${c.ca}/${c.f}</div>`:"";
-    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your 4bet ${c.fb}, call ${c.ca}, fold ${c.f}${tot?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
-    h+="</tr>";}h+="</table>";const el=document.getElementById("tbgrid");el.innerHTML=h;
-  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListTB(tbHero,tbTbet,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
 
 // hole cards tab
 let holeSel=null,holeMode="vp";
@@ -539,17 +516,17 @@ document.getElementById("sdposf").onchange=renderShowdown;document.getElementByI
 // top tabs
 document.querySelectorAll(".toptab").forEach(t=>t.onclick=()=>{
   document.querySelectorAll(".toptab").forEach(x=>x.classList.toggle("active",x===t));
-  ["leaks","facing","threebet","results","showdown","holecards"].forEach(n=>document.getElementById("pane-"+n).classList.toggle("hidden",t.dataset.t!==n));});
+  ["preflop","results","showdown","holecards"].forEach(n=>document.getElementById("pane-"+n).classList.toggle("hidden",t.dataset.t!==n));});
 
 function updateInfo(){const days=Object.keys(A.day).length;
   document.getElementById("drinfo").textContent=range?`${range.from} to ${range.to} (${days} day${days!==1?"s":""}, ${A.hs.length} hands)`:`all ${DAYS.length} days`;}
-function rerenderAll(){recompute();renderCards();renderDayTrend();renderRfiTabs();renderRfiGrid();renderFlags();renderFacing();renderThreebet();renderResults();renderShowdown();renderHole();updateInfo();}
+function rerenderAll(){recompute();renderCards();renderDayTrend();renderExplorer();renderFlags();renderResults();renderShowdown();renderHole();updateInfo();}
 
 document.getElementById("sub").textContent=`${DATA.total_hands} hands - ${DATA.files} files - generated ${DATA.generated}`;
 document.getElementById("note").innerHTML=
-  "Preflop ranges: solver-derived 6-max 100bb charts (pekarstas GGPoker pack) for RFI, facing an open, and facing a 3-bet, with the older hand-authored ranges as fallback where the pack lacks a spot. Borderline hands the solver plays both ways are not flagged. "+
-  "The replayer now shows a postflop readout — board texture, your made hand, and (heads-up only) your equity vs an estimated villain range. That equity is an approximation: the villain range is inferred from preflop action, and stack depth is treated as 100bb. "+
-  "4-bet pots, multiway and limped pots are replayable but not GTO-judged preflop. Net = chips collected minus chips in (after rake). Use the Period control to compare days. Each grid cell also shows the GTO action split (R=raise/3bet/4bet, C=call, F=fold, A=all-in) above your own counts — the pack encodes these as pure (100%) or even (50/50) splits, not fine-grained frequencies. Edit tools/gto_ranges.py to tune ranges.";
+  "Preflop ranges: solver range screenshots (6-max 100bb) for RFI, facing an open, and facing a 3-bet. Build any spot in the explorer above by setting each earlier player's action (fold or raise, up to one 3-bet); the highlighted seat is you, and the grid shows that spot's GTO range with your own play overlaid. Facing a 3-bet, the reference depends on the opener too: the opener replying to a 3-bet may flat-call, while a cold player is 4-bet-or-fold (a cold flat-call is flagged too loose). Borderline hands the solver plays both ways are not flagged. "+
+  "The replayer shows a postflop readout — board texture, your made hand, and (heads-up only) your equity vs an estimated villain range. That equity is an approximation: the villain range is inferred from preflop action, and stack depth is treated as 100bb. "+
+  "4-bet pots, multiway and limped pots are replayable but not GTO-judged preflop. Net = chips collected minus chips in (after rake). Use the Period control to compare days. Each grid cell also shows the GTO action split (R=raise/3bet/4bet, C=call, F=fold, A=all-in) above your own counts. Edit tools/gto_ranges.py to tune ranges.";
 
 // ---------- REPLAYER ----------
 const SLOTS=[[50,90],[89,70],[92,32],[50,9],[11,32],[11,70]];
