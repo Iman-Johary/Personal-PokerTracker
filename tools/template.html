@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poker Tracker - Preflop</title>
+<style>
+  :root{--bg:#0f1419;--panel:#1a2029;--line:#2a323d;--txt:#e6edf3;--mut:#8b98a5;
+        --raise:#e5484d;--fold:#3f7fce;--call:#3fb950;--allin:#8b1e2d;--dev:#f85149;--accent:#58a6ff;--win:#3fb950;--loss:#f85149;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px}
+  header{padding:18px 24px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 4px;font-size:20px} .sub{color:var(--mut);font-size:13px}
+  .wrap{padding:20px 24px;max-width:1180px;margin:0 auto}
+  .daterange{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .drbtn{padding:6px 12px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--txt);cursor:pointer;font-size:13px}
+  .drbtn.active{background:var(--accent);color:#0b1220;border-color:var(--accent);font-weight:600}
+  .daterange input[type=date]{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+  .toptabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+  .toptab{padding:10px 18px;cursor:pointer;color:var(--mut);border-bottom:2px solid transparent;font-weight:600}
+  .toptab.active{color:var(--txt);border-bottom-color:var(--accent)}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:118px}
+  .card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  .card .v{font-size:22px;font-weight:600;margin-top:4px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+  .tab{padding:8px 14px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:var(--panel);color:var(--txt)}
+  .tab.active{background:var(--accent);color:#0b1220;border-color:var(--accent);font-weight:600}
+  .tab .r{display:block;font-size:11px;color:var(--mut);margin-top:2px}
+  .tab.active .r{color:#0b1220}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin:8px 0 16px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:3px;display:inline-block}
+  .gridwrap{overflow:auto}
+  table.grid{border-collapse:collapse;margin:0 auto}
+  table.grid td{width:52px;height:46px;border:1px solid var(--bg);text-align:center;vertical-align:middle;font-size:12px;position:relative;border-radius:4px;cursor:pointer}
+  table.grid td:hover{outline:2px solid var(--accent);outline-offset:-2px}
+  .holecell{background:#161b22}
+  .holecell .freqfill{position:absolute;left:0;right:0;bottom:0;border-radius:0 0 4px 4px;z-index:0}
+  td .lbl,td .hnet,td .cnt{position:relative;z-index:1}
+  .hnet{font-size:10px;margin-top:1px;font-weight:600}
+  .holedetail{margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-height:22px}
+  .holedetail .hd-row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:8px}
+  .holedetail a{color:var(--accent);cursor:pointer;text-decoration:underline}
+  .lbl{font-weight:600}.cnt{font-size:10px;color:#fff;margin-top:1px}
+  table.grid td .lbl{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.85)}
+  table.grid td .cnt{text-shadow:0 1px 2px rgba(0,0,0,.9);font-weight:600}
+  .gto{font-size:9px;line-height:1.15;color:#cfe3ee;margin-top:1px;font-weight:600;letter-spacing:.2px}
+  table.grid td{height:52px}
+  .devbadge{position:absolute;top:2px;right:3px;background:rgba(0,0,0,.78);color:#fff;border:1px solid #fff;border-radius:8px;padding:0 4px;font-size:9px;font-weight:700;z-index:2}
+  .sec{margin-top:28px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;align-items:center}
+  .filters select{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+  table.list{width:100%;border-collapse:collapse;margin-top:8px}
+  table.list th,table.list td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;font-size:13px}
+  table.list th{color:var(--mut);font-weight:600;cursor:pointer;user-select:none}
+  table.list tbody tr{cursor:pointer}table.list tbody tr:hover{background:#1c2530}
+  .pill{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .t-too_tight{background:#1f6feb33;color:#79c0ff}.t-too_loose{background:#f8514933;color:#ff7b72}.t-limp{background:#d2992233;color:#e3b341}
+  .pos{color:var(--win)}.neg{color:var(--loss)}
+  .note{color:var(--mut);font-size:12px;margin-top:24px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+  .mono{font-variant-numeric:tabular-nums}.play{color:var(--accent)}
+  .hidden{display:none}
+  .trend{width:100%;border-collapse:collapse;margin:2px 0 8px;max-width:640px}
+  .trend th,.trend td{border-bottom:1px solid var(--line);padding:5px 10px;text-align:right;font-size:12px}
+  .trend th:first-child,.trend td:first-child{text-align:left}
+  .trend tbody tr{cursor:pointer}.trend tbody tr:hover{background:#1c2530}
+  .bar{display:inline-block;height:8px;border-radius:2px;background:var(--dev);vertical-align:middle;margin-left:6px}
+  details{margin:4px 0 14px}summary{cursor:pointer;color:var(--accent);font-size:13px}
+  /* replayer */
+  .ovl{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .ovl.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:760px;max-width:100%;max-height:96vh;overflow:auto}
+  .mhead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .mhead h3{margin:0;font-size:15px}
+  .x{cursor:pointer;color:var(--mut);font-size:22px;line-height:1;border:none;background:none}
+  .tablewrap{position:relative;margin:16px auto;width:640px;max-width:100%;aspect-ratio:16/10}
+  .felt{position:absolute;inset:6%;background:radial-gradient(ellipse at center,#1c6e4a,#0f4530);border:10px solid #5a3d24;border-radius:50%/50%;box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+  .seat{position:absolute;transform:translate(-50%,-50%);width:118px;text-align:center}
+  .seatbox{background:#0d1117;border:1px solid var(--line);border-radius:8px;padding:5px 6px}
+  .seat.acting .seatbox{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+  .seat.hero .seatbox{border-color:#e3b341}
+  .seat.folded{opacity:.36}
+  .seatname{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seatpos{font-size:10px;color:var(--mut)}.seatstack{font-size:11px;color:#9fe0b6}
+  .holecards{display:flex;gap:3px;justify-content:center;margin-top:3px}
+  .pcard{width:24px;height:34px;border-radius:3px;background:#fff;color:#111;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .pcard.back{background:linear-gradient(135deg,#3b5ba5,#22376b);color:transparent}
+  .pcard.red{color:#d1344a}
+  .bet{position:absolute;transform:translate(-50%,-50%);font-size:11px;background:#000a;border:1px solid var(--line);border-radius:12px;padding:1px 7px;color:#e3b341;white-space:nowrap}
+  .btnchip{position:absolute;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#fff;color:#111;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #999}
+  .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
+  .board{display:flex;gap:5px;justify-content:center;min-height:42px}
+  .bcard{width:30px;height:42px;border-radius:4px;background:#fff;color:#111;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.5)}
+  .bcard.red{color:#d1344a}
+  #runspanel{padding:0 16px}
+  .runshead{text-align:center;color:var(--mut);font-size:12px;margin:8px 0 2px}
+  .runrow{display:flex;gap:4px;align-items:center;justify-content:center;margin:5px 0}
+  .runtag{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;min-width:82px;text-align:center;margin-right:4px}
+  .runtag.rwin{background:#2ea04333;color:#3fb950}.runtag.rloss{background:#f8514933;color:#ff7b72}
+  .rcard{width:23px;height:32px;border-radius:3px;background:#fff;color:#111;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+  .rcard.red{color:#d1344a}
+  .potlbl{margin-top:8px;font-size:13px;color:#e3b341;font-weight:600}
+  .actionbar{text-align:center;padding:4px 16px 6px;min-height:22px;font-size:14px}
+  .postflop{margin:2px 16px 4px;padding:8px 12px;border-radius:8px;background:#1b2a3322;border:1px solid #22384a;font-size:13px;text-align:center}
+  .postflop b{color:#79c0ff}
+  .postflop .eqbar{display:inline-block;height:8px;border-radius:2px;background:linear-gradient(90deg,#3fb950,#e3b341);vertical-align:middle;margin-left:6px}
+  .anno{margin:6px 16px;padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.5}
+  .anno.too_tight{background:#1f6feb22;border:1px solid #1f6feb66}
+  .anno.too_loose{background:#f8514922;border:1px solid #f8514966}
+  .anno.limp{background:#d2992222;border:1px solid #d2992266}
+  .anno.ok{background:#2ea04322;border:1px solid #2ea04366}
+  .anno.info{background:#30363d66;border:1px solid var(--line)}
+  .handnav{display:flex;gap:10px;align-items:center;justify-content:center;padding:10px 16px 0}
+  .handnav button{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px}
+  .handnav button:disabled{opacity:.4;cursor:default}
+  .handnav span{color:var(--mut);font-size:12px;min-width:110px;text-align:center}
+  .controls{display:flex;gap:8px;align-items:center;justify-content:center;padding:10px 16px 18px}
+  .controls button{background:var(--accent);color:#0b1220;border:none;border-radius:7px;padding:8px 14px;font-weight:600;cursor:pointer}
+  .controls button:disabled{opacity:.4;cursor:default}
+  .controls .step{color:var(--mut);font-size:12px;min-width:120px;text-align:center}
+  .resnet{font-weight:700}
+</style></head>
+<body>
+<header>
+  <h1>Preflop Analysis</h1><div class="sub" id="sub"></div>
+  <div class="daterange">
+    <span class="sub">Period:</span>
+    <button class="drbtn active" data-r="all">All</button>
+    <button class="drbtn" data-r="1">Latest day</button>
+    <button class="drbtn" data-r="3">Last 3 days</button>
+    <button class="drbtn" data-r="7">Last 7 days</button>
+    <span class="sub">custom</span>
+    <input type="date" id="dfrom"><span class="sub">to</span><input type="date" id="dto">
+    <span class="sub" id="drinfo"></span>
+  </div>
+</header>
+<div class="wrap">
+  <div class="toptabs">
+    <div class="toptab active" data-t="leaks">Preflop leaks</div>
+    <div class="toptab" data-t="facing">Facing a raise</div>
+    <div class="toptab" data-t="threebet">3-bet pots</div>
+    <div class="toptab" data-t="results">Biggest wins &amp; losses</div>
+    <div class="toptab" data-t="showdown">Showdowns</div>
+    <div class="toptab" data-t="holecards">Hole cards</div>
+  </div>
+
+  <div id="pane-leaks">
+    <div class="cards" id="cards"></div>
+    <details><summary>Day-by-day trend (are you improving?)</summary><div id="daytrend"></div></details>
+    <h3 style="font-size:15px;margin:6px 0">RFI charts <span class="sub">(open-raise or fold, pot unopened — click a cell to replay an example)</span></h3>
+    <div class="tabs" id="tabs"></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--raise)"></i> raise</span>
+      <span><i class="sw" style="background:var(--call)"></i> limp/call (SB)</span>
+      <span><i class="sw" style="background:var(--allin)"></i> all-in</span>
+      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
+      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
+      <span>cell width = GTO frequency; number = your raise/fold/limp counts</span>
+    </div>
+    <div class="gridwrap"><div id="grid"></div></div>
+    <div class="sec">
+      <h3 style="font-size:15px">Hands you played against GTO <span class="sub">(click a row to replay)</span></h3>
+      <div class="filters">
+        <select id="fpos"></select>
+        <select id="fspot"><option value="">All spots</option><option value="R">RFI (open/fold)</option><option value="V">Facing an open</option><option value="T">3-bet pots</option></select>
+        <select id="ftype"><option value="">All types</option><option value="too_tight">Too tight</option><option value="too_loose">Too loose</option><option value="limp">Limped</option></select>
+        <span class="sub" id="fcount"></span>
+      </div>
+      <table class="list"><thead><tr>
+        <th data-k="spot">Spot</th><th data-k="h">Hand</th><th data-k="a">You</th>
+        <th data-k="rec">GTO</th><th data-k="t">Type</th><th data-k="net">Result</th><th data-k="dt">When</th><th></th>
+      </tr></thead><tbody id="flagbody"></tbody></table>
+    </div>
+  </div>
+
+  <div id="pane-facing" class="hidden">
+    <div class="cards" id="vscards"></div>
+    <h3 style="font-size:15px;margin:6px 0">Facing a raise <span class="sub">(one raiser before you — click a cell to replay an example)</span></h3>
+    <div class="tabs" id="vstabs"></div>
+    <div class="filters"><select id="vsopener"></select><span class="sub" id="vsmeta"></span></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--raise)"></i> 3-bet</span>
+      <span><i class="sw" style="background:var(--call)"></i> call</span>
+      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
+      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
+      <span>cell width = GTO frequency; number = your 3bet/call/fold counts</span>
+    </div>
+    <div class="gridwrap"><div id="vsgrid"></div></div>
+  </div>
+
+  <div id="pane-threebet" class="hidden">
+    <div class="cards" id="tbcards"></div>
+    <h3 style="font-size:15px;margin:6px 0">3-bet pots <span class="sub">(you faced a single 3-bet — fold / call / 4-bet; click a cell to replay)</span></h3>
+    <div class="tabs" id="tbtabs"></div>
+    <div class="filters"><select id="tbopener"></select><span class="sub" id="tbmeta"></span></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--raise)"></i> 4-bet</span>
+      <span><i class="sw" style="background:var(--allin)"></i> all-in</span>
+      <span><i class="sw" style="background:var(--call)"></i> call/continue</span>
+      <span><i class="sw" style="background:var(--fold)"></i> fold</span>
+      <span><i class="sw" style="background:rgba(0,0,0,.78);border:1px solid #fff;border-radius:8px"></i> your deviations</span>
+      <span>cell width = GTO frequency; number = your 4bet/call/fold counts</span>
+    </div>
+    <div class="gridwrap"><div id="tbgrid"></div></div>
+  </div>
+
+  <div id="pane-results" class="hidden">
+    <div class="cards" id="rescards"></div>
+    <div class="filters">
+      <select id="rposf"></select>
+      <select id="rsort"><option value="loss">Biggest losses first</option><option value="win">Biggest wins first</option></select>
+      <span class="sub" id="rcount"></span>
+    </div>
+    <table class="list"><thead><tr><th>Pos</th><th>Hand</th><th>Result</th><th>When</th><th></th></tr></thead><tbody id="resbody"></tbody></table>
+  </div>
+
+  <div id="pane-showdown" class="hidden">
+    <div class="cards" id="sdcards"></div>
+    <div class="filters">
+      <select id="sdposf"></select>
+      <select id="sdsort"><option value="loss">Biggest losses first</option><option value="win">Biggest wins first</option><option value="new">Most recent first</option></select>
+      <span class="sub" id="sdcount"></span>
+    </div>
+    <table class="list"><thead><tr><th>Pos</th><th>Your hand</th><th>Board</th><th>Result</th><th>When</th><th></th></tr></thead><tbody id="sdbody"></tbody></table>
+  </div>
+
+  <div id="pane-holecards" class="hidden">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 10px">
+      <button class="drbtn" id="holetoggle"></button><span class="sub" id="holehead"></span>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:#3fb95088"></i> net win</span>
+      <span><i class="sw" style="background:#f8514988"></i> net loss</span>
+      <span>each cell = net $ | times played</span>
+      <span>click a cell for details &amp; to replay</span>
+    </div>
+    <div class="gridwrap"><div id="holegrid"></div></div>
+    <div id="holedetail" class="holedetail"><span class="sub">Click a hand in the grid to see its stats, biggest win/loss, and replay every time you had it.</span></div>
+  </div>
+
+  <div class="note" id="note"></div>
+</div>
+
+<div class="ovl" id="ovl"><div class="modal">
+  <div class="mhead"><h3 id="mtitle"></h3><button class="x" id="close">&times;</button></div>
+  <div class="handnav hidden" id="handnav"><button id="phand">&#8592; Prev hand</button><span class="mono" id="handidx"></span><button id="nhand">Next hand &#8594;</button></div>
+  <div class="tablewrap"><div class="felt"></div><div id="seats"></div>
+    <div class="center"><div class="board" id="board"></div><div class="potlbl" id="pot"></div></div>
+  </div>
+  <div class="actionbar" id="actionbar"></div>
+  <div id="postflop"></div>
+  <div id="annowrap"></div>
+  <div id="runspanel"></div>
+  <div class="controls"><button id="prev">&#8592; Prev</button><span class="step" id="stepc"></span><button id="next">Next &#8594;</button></div>
+</div></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const RANKS=DATA.ranks.split("");
+const RED={h:1,d:1};
+const POSORD=["UTG","HJ","CO","BTN","SB","BB"];
+const RFIPOS=DATA.positions;
+const TLABEL={too_tight:"Too tight",too_loose:"Too loose",limp:"Limp"};
+function handAt(i,j){const hi=RANKS[Math.min(i,j)],lo=RANKS[Math.max(i,j)];return i===j?hi+lo:hi+lo+(i<j?"s":"o");}
+function suit(s){return {c:"♣",d:"♦",h:"♥",s:"♠"}[s];}
+function cardHTML(c,cls){return `<div class="${cls}${RED[c[1]]?" red":""}">${c[0]}${suit(c[1])}</div>`;}
+function fmt(n){return (n<0?"-$":"$")+Math.abs(n).toFixed(2);}
+function boardStr(id){const b=DATA.replays[id].board;return b.flop.concat(b.turn,b.river).map(c=>c[0]+suit(c[1])).join(" ")||"-";}
+// GTO action split (percentages) helpers - values come from the solver chart pack
+function gtoSplit(map,hd){return (map&&map[hd])||null;}
+// A missing/empty split means the pack folds this hand 100% (pure-fold cells are
+// omitted from the chart) — render it as fold, not as all-zeros.
+function gtoTokens(s){if(!s||!(s.r||s.c||s.a||s.f))return "F100";const o=[];if(s.r)o.push("R"+s.r);if(s.c)o.push("C"+s.c);if(s.a)o.push("A"+s.a);if(s.f)o.push("F"+s.f);return o.join(" ");}
+function gtoTip(s){if(!s||!(s.r||s.c||s.a||s.f))return "fold 100%";return `raise ${s.r||0}% call ${s.c||0}% fold ${s.f||0}% allin ${s.a||0}%`;}
+// Frequency-bar cell: a horizontal bar split by the action frequencies
+// (raise=red, all-in=dark red, call=green, fold=blue). Empty/pure-fold -> all blue.
+function splitBg(s){
+  if(!s||!(s.r||s.c||s.a||s.f))return "var(--fold)";
+  const order=[["--raise",s.r||0],["--allin",s.a||0],["--call",s.c||0],["--fold",s.f||0]];
+  let acc=0;const parts=[];
+  for(const seg of order){const pct=seg[1];if(pct<=0)continue;parts.push(`var(${seg[0]}) ${acc}% ${acc+pct}%`);acc+=pct;}
+  if(acc<=0)return "var(--fold)";
+  if(acc<100)parts.push(`var(--fold) ${acc}% 100%`);
+  return `linear-gradient(90deg,${parts.join(",")})`;
+}
+
+DATA.hands.forEach(h=>{h.ts=h.dt?Date.parse(h.dt):0;});
+const TB=DATA.threebet||[];TB.forEach(x=>{x.ts=x.dt?Date.parse(x.dt):0;x.k="T";});
+const DAYS=[...new Set(DATA.hands.map(h=>h.day).filter(Boolean))].sort();
+
+// ---- date range ----
+let range=null;  // null=all, else {from,to} day strings inclusive
+function inRange(h){return !range||(h.day>=range.from&&h.day<=range.to);}
+function F(){return DATA.hands.filter(inRange);}
+function setPreset(r){
+  if(r==="all")range=null;
+  else if(r==="1")range={from:DAYS[DAYS.length-1],to:DAYS[DAYS.length-1]};
+  else{const n=+r,to=DAYS[DAYS.length-1],from=DAYS[Math.max(0,DAYS.length-n)];range={from,to};}
+  document.getElementById("dfrom").value=range?range.from:"";
+  document.getElementById("dto").value=range?range.to:"";
+  rerenderAll();
+}
+document.querySelectorAll(".drbtn").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".drbtn").forEach(x=>x.classList.toggle("active",x===b));
+  setPreset(b.dataset.r);});
+function customChange(){const f=document.getElementById("dfrom").value,t=document.getElementById("dto").value;
+  if(f&&t){range={from:f,to:t};document.querySelectorAll(".drbtn").forEach(x=>x.classList.remove("active"));rerenderAll();}}
+document.getElementById("dfrom").onchange=customChange;
+document.getElementById("dto").onchange=customChange;
+
+// ---- aggregation ----
+function gtoRFI(pos,h){if((DATA.rfi_mix&&DATA.rfi_mix[pos]||[]).includes(h))return "MIX";return DATA.ranges[pos].includes(h)?"RAISE":"FOLD";}
+function vsDef(hero,op){return (DATA.vs_defend[hero]||{})[op]||{defend:[],threebet:[]};}
+function computeRFI(hs){const grid={},summary={};
+  RFIPOS.forEach(p=>{grid[p]={};});
+  hs.forEach(h=>{if(h.k!=="R"||!grid[h.pos])return;const c=grid[h.pos][h.h]||(grid[h.pos][h.h]={r:0,f:0,l:0});
+    if(h.a==="RAISE")c.r++;else if(h.a==="FOLD")c.f++;else c.l++;});
+  RFIPOS.forEach(p=>{let sp=0,dv=0;for(const hd in grid[p]){const c=grid[p][hd],tot=c.r+c.f+c.l;sp+=tot;
+    const g=gtoRFI(p,hd),isL=(DATA.rfi_limp&&DATA.rfi_limp[p]||[]).includes(hd);
+    const d=g==="MIX"?(isL?0:c.l):(g==="RAISE"?(c.f+c.l):(c.r+c.l));dv+=d;c.gto=g;c.dev=d;}
+    summary[p]={spots:sp,devs:dv,rate:sp?100*dv/sp:0};});
+  return {grid,summary};}
+function computeVs(hs){const g={};
+  hs.forEach(h=>{if(h.k!=="V")return;(g[h.pos]=g[h.pos]||{});(g[h.pos][h.op]=g[h.pos][h.op]||{cells:{}});
+    const cells=g[h.pos][h.op].cells,c=cells[h.h]||(cells[h.h]={c:0,t:0,f:0});
+    if(h.a==="CALL")c.c++;else if(h.a==="3BET")c.t++;else c.f++;});
+  for(const hero in g)for(const op in g[hero]){const ds=new Set(vsDef(hero,op).defend),ms=new Set(vsDef(hero,op).mix||[]);
+    let sp=0,dv=0;const cells=g[hero][op].cells;
+    for(const hd in cells){const c=cells[hd],tot=c.c+c.t+c.f;sp+=tot;const d=ms.has(hd)?0:(ds.has(hd)?c.f:(c.c+c.t));dv+=d;c.dev=d;}
+    g[hero][op].spots=sp;g[hero][op].devs=dv;g[hero][op].rate=sp?100*dv/sp:0;}
+  return g;}
+function recFor(h){if(h.k==="T")return h.rec==="CONTINUE"?"Continue":"Fold";
+  if(h.k==="R")return h.a==="LIMP"?(gtoRFI(h.pos,h.h)):gtoRFI(h.pos,h.h);
+  const ds=new Set(vsDef(h.pos,h.op).defend);return ds.has(h.h)?"DEFEND":"FOLD";}
+function exampleListRFI(pos,hand){return A.hs.filter(h=>h.k==="R"&&h.pos===pos&&h.h===hand).sort((a,b)=>b.ts-a.ts).map(h=>h.id);}
+function exampleListVs(hero,op,hand){return A.hs.filter(h=>h.k==="V"&&h.pos===hero&&h.op===op&&h.h===hand).sort((a,b)=>b.ts-a.ts).map(h=>h.id);}
+function exampleListTB(hero,tb,hand){return A.tbRows.filter(x=>x.pos===hero&&x.tbet===tb&&x.h===hand).sort((a,b)=>b.ts-a.ts).map(x=>x.id);}
+function tbDef(h,t){return (DATA.tb_defend[h]||{})[t]||{cont:[],fourbet:[]};}
+function computeTB(rows){const g={};
+  rows.forEach(x=>{(g[x.pos]=g[x.pos]||{});(g[x.pos][x.tbet]=g[x.pos][x.tbet]||{cells:{},spots:0,devs:0});
+    const M=g[x.pos][x.tbet];const c=M.cells[x.h]||(M.cells[x.h]={ca:0,fb:0,f:0,dev:0});
+    if(x.a==="CALL")c.ca++;else if(x.a==="4BET")c.fb++;else c.f++;
+    M.spots++;if(x.t!=="ok"){c.dev++;M.devs++;}});
+  for(const h in g)for(const t in g[h]){const M=g[h][t];M.rate=M.spots?100*M.devs/M.spots:0;}
+  return g;}
+function computeHole(hs){const g={};
+  (holeMode==="vp"?hs.filter(h=>h.vp):hs).forEach(h=>{const o=g[h.h]||(g[h.h]={count:0,net:0,best:null,worst:null});
+    o.count++;o.net+=h.net;
+    if(!o.best||h.net>o.best.net)o.best={id:h.id,net:h.net};
+    if(!o.worst||h.net<o.worst.net)o.worst={id:h.id,net:h.net};});
+  return g;}
+function exampleListHole(hd){return A.hs.filter(h=>h.h===hd&&(holeMode==="vp"?h.vp:true)).sort((a,b)=>b.ts-a.ts).map(h=>h.id);}
+function perDay(hs){const d={};hs.forEach(h=>{const o=d[h.day]||(d[h.day]={rs:0,rd:0,vs:0,vd:0,net:0,n:0});
+  o.n++;o.net+=h.net;if(h.k==="R"){o.rs++;if(h.t!=="ok")o.rd++;}if(h.k==="V"){o.vs++;if(h.t!=="ok")o.vd++;}});return d;}
+
+let A={};
+function recompute(){const hs=F();A.hs=hs;
+  const r=computeRFI(hs);A.rgrid=r.grid;A.rsum=r.summary;A.vs=computeVs(hs);
+  A.tbRows=TB.filter(inRange);A.tb=computeTB(A.tbRows);
+  A.hole=computeHole(hs);
+  A.flagged=hs.filter(h=>(h.k==="R"||h.k==="V")&&h.t&&h.t!=="ok").concat(A.tbRows.filter(x=>x.t!=="ok"));
+  A.day=perDay(hs);}
+
+// ---- renderers ----
+function renderCards(){
+  let rs=0,rd=0;RFIPOS.forEach(p=>{rs+=A.rsum[p].spots;rd+=A.rsum[p].devs;});
+  let vs=0,vd=0;for(const hero in A.vs)for(const op in A.vs[hero]){vs+=A.vs[hero][op].spots;vd+=A.vs[hero][op].devs;}
+  let ts=0,tdv=0;for(const h in A.tb)for(const t in A.tb[h]){ts+=A.tb[h][t].spots;tdv+=A.tb[h][t].devs;}
+  document.getElementById("cards").innerHTML=[
+    ["Hands (range)",A.hs.length],["RFI spots",rs],["RFI dev.",rs?rd+" ("+(100*rd/rs).toFixed(0)+"%)":"-"],
+    ["Facing-raise spots",vs],["Facing dev.",vs?vd+" ("+(100*vd/vs).toFixed(0)+"%)":"-"],
+    ["3-bet spots",ts],["3-bet dev.",ts?tdv+" ("+(100*tdv/ts).toFixed(0)+"%)":"-"],
+  ].map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono">${c[1]}</div></div>`).join("");}
+function renderDayTrend(){const d=A.day,days=Object.keys(d).sort();
+  const maxRate=Math.max(1,...days.map(x=>d[x].rs?100*d[x].rd/d[x].rs:0));
+  let h='<table class="trend"><thead><tr><th>Day</th><th>Hands</th><th>RFI dev%</th><th>Facing dev%</th><th>Net $</th></tr></thead><tbody>';
+  days.forEach(x=>{const o=d[x],rr=o.rs?100*o.rd/o.rs:0,vr=o.vs?100*o.vd/o.vs:0;
+    h+=`<tr data-day="${x}"><td>${x}</td><td>${o.n}</td>`+
+       `<td>${o.rs?rr.toFixed(0)+"%":"-"}<span class="bar" style="width:${o.rs?(40*rr/maxRate):0}px"></span></td>`+
+       `<td>${o.vs?vr.toFixed(0)+"%":"-"}</td>`+
+       `<td class="${o.net>=0?'pos':'neg'} mono">${fmt(o.net)}</td></tr>`;});
+  h+="</tbody></table>";document.getElementById("daytrend").innerHTML=h;
+  document.querySelectorAll("#daytrend tr[data-day]").forEach(tr=>tr.onclick=()=>{
+    range={from:tr.dataset.day,to:tr.dataset.day};document.querySelectorAll(".drbtn").forEach(x=>x.classList.remove("active"));
+    document.getElementById("dfrom").value=tr.dataset.day;document.getElementById("dto").value=tr.dataset.day;rerenderAll();});}
+let curPos=RFIPOS[0];
+function renderRfiTabs(){document.getElementById("tabs").innerHTML=RFIPOS.map(p=>{const s=A.rsum[p];
+  return `<div class="tab ${p===curPos?'active':''}" data-p="${p}">${p}<span class="r">${s.spots} spots - ${s.rate.toFixed(0)}% off</span></div>`;}).join("");
+  document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>{curPos=t.dataset.p;renderRfiTabs();renderRfiGrid();});}
+function cellColor(g,t){if(t===0)return g==="RAISE"?"#17351f":g==="MIX"?"#2b2717":"#191f27";return g==="RAISE"?"var(--raise)":g==="MIX"?"#b8860b":"var(--fold)";}
+function renderRfiGrid(){const g=A.rgrid[curPos];let h='<table class="grid">';
+  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
+    const c=g[hd]||{r:0,f:0,l:0,dev:0};const ga=gtoRFI(curPos,hd);const t=c.r+c.f+c.l;
+    const gs=gtoSplit(DATA.rfi_freq[curPos],hd);
+    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=t>0?`<div class="cnt">${c.r}/${c.f}${c.l?("/"+c.l):""}</div>`:"";
+    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your raise ${c.r}, fold ${c.f}, limp ${c.l}${t?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
+    h+="</tr>";}h+="</table>";const el=document.getElementById("grid");el.innerHTML=h;
+  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListRFI(curPos,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
+let fsk="dt",fsd=-1;
+function renderFlags(){const fp=document.getElementById("fpos").value,fs=document.getElementById("fspot").value,ft=document.getElementById("ftype").value;
+  let rows=A.flagged.filter(r=>(!fp||r.pos===fp)&&(!fs||r.k===fs)&&(!ft||r.t===ft));
+  rows.sort((a,b)=>{let x=a[fsk],y=b[fsk];if(fsk==="net"){x=+x;y=+y;}return(x>y?1:x<y?-1:0)*fsd;});
+  document.getElementById("flagbody").innerHTML=rows.slice(0,600).map(r=>{
+    const spot=r.k==="R"?`RFI ${r.pos}`:r.k==="T"?`${r.pos} vs ${r.tbet} 3-bet`:`${r.pos} vs ${r.op}`;
+    return `<tr data-id="${r.id}"><td>${spot}</td><td class="lbl">${r.h}</td><td>${r.a}</td><td>${recFor(r)}</td>`+
+      `<td><span class="pill t-${r.t}">${TLABEL[r.t]}</span></td><td class="mono ${r.net>=0?'pos':'neg'}">${fmt(r.net)}</td>`+
+      `<td class="mono sub">${r.dt.replace("T"," ").slice(0,16)}</td><td class="play">&#9654;</td></tr>`;}).join("");
+  const _fids=rows.slice(0,600).map(r=>r.id);
+  document.querySelectorAll("#flagbody tr").forEach(tr=>tr.onclick=()=>openReplay(tr.dataset.id,_fids));
+  document.getElementById("fcount").textContent=`${rows.length} deviations`+(rows.length>600?" (showing 600)":"");}
+document.querySelectorAll("#pane-leaks table.list th").forEach(th=>th.onclick=()=>{const k=th.dataset.k;if(!k)return;if(k===fsk)fsd*=-1;else{fsk=k;fsd=1;}renderFlags();});
+["fpos","fspot","ftype"].forEach(id=>document.getElementById(id).onchange=renderFlags);
+
+// facing tab
+let vsHero=null,vsOpener=null;
+function renderFacing(){const heroes=Object.keys(A.vs).sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
+  let rs=0,rd=0;for(const hero in A.vs)for(const op in A.vs[hero]){rs+=A.vs[hero][op].spots;rd+=A.vs[hero][op].devs;}
+  document.getElementById("vscards").innerHTML=[["Facing-raise spots",rs],["Deviations",rd],["Deviation rate",rs?(100*rd/rs).toFixed(1)+"%":"-"]]
+    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono">${c[1]}</div></div>`).join("");
+  if(!heroes.length){document.getElementById("vstabs").innerHTML="";document.getElementById("vsopener").innerHTML="";
+    document.getElementById("vsgrid").innerHTML='<p class="sub">No facing-a-raise spots in this period.</p>';document.getElementById("vsmeta").textContent="";return;}
+  if(!vsHero||!A.vs[vsHero])vsHero=heroes[0];
+  document.getElementById("vstabs").innerHTML=heroes.map(hp=>{const sp=Object.values(A.vs[hp]).reduce((a,m)=>a+m.spots,0);
+    return `<div class="tab ${hp===vsHero?'active':''}" data-h="${hp}">${hp}<span class="r">${sp} spots</span></div>`;}).join("");
+  document.querySelectorAll("#vstabs .tab").forEach(t=>t.onclick=()=>{vsHero=t.dataset.h;vsOpener=null;renderFacing();});
+  let ops=Object.keys(A.vs[vsHero]);
+  if(!vsOpener||!ops.includes(vsOpener))vsOpener=ops.slice().sort((a,b)=>A.vs[vsHero][b].spots-A.vs[vsHero][a].spots)[0];
+  ops=ops.sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
+  const sel=document.getElementById("vsopener");
+  sel.innerHTML=ops.map(o=>`<option value="${o}" ${o===vsOpener?'selected':''}>vs ${o} open (${A.vs[vsHero][o].spots} spots)</option>`).join("");
+  sel.onchange=()=>{vsOpener=sel.value;renderVsGrid();};renderVsGrid();}
+function vsCellColor(cls,t){if(t===0)return cls==="t"?"#2a1c12":cls==="c"?"#141d2e":"#191f27";return cls==="t"?"#b4632b":cls==="c"?"#2f6feb":"var(--fold)";}
+function renderVsGrid(){const M=A.vs[vsHero][vsOpener],R=vsDef(vsHero,vsOpener);
+  const defend=new Set(R.defend),three=new Set(R.threebet);
+  document.getElementById("vsmeta").textContent=`${M.spots} spots · ${M.rate.toFixed(0)}% deviation · GTO defends ${defend.size} combos (${three.size} as 3-bet)`;
+  let h='<table class="grid">';
+  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
+    const c=M.cells[hd]||{c:0,t:0,f:0,dev:0};const tot=c.c+c.t+c.f;
+    const cls=three.has(hd)?"t":defend.has(hd)?"c":"f";const g=cls==="t"?"3-bet":cls==="c"?"call":"fold";
+    const gs=gtoSplit((DATA.vs_freq[vsHero]||{})[vsOpener],hd);
+    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=tot>0?`<div class="cnt">${c.t}/${c.c}/${c.f}</div>`:"";
+    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your 3bet ${c.t}, call ${c.c}, fold ${c.f}${tot?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
+    h+="</tr>";}h+="</table>";const el=document.getElementById("vsgrid");el.innerHTML=h;
+  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListVs(vsHero,vsOpener,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
+
+// 3-bet pots tab
+let tbHero=null,tbTbet=null;
+function renderThreebet(){const heroes=Object.keys(A.tb).sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
+  let rs=0,rd=0;for(const h in A.tb)for(const t in A.tb[h]){rs+=A.tb[h][t].spots;rd+=A.tb[h][t].devs;}
+  document.getElementById("tbcards").innerHTML=[["3-bet spots",rs],["Deviations",rd],["Deviation rate",rs?(100*rd/rs).toFixed(1)+"%":"-"]]
+    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono">${c[1]}</div></div>`).join("");
+  if(!heroes.length){document.getElementById("tbtabs").innerHTML="";document.getElementById("tbopener").innerHTML="";
+    document.getElementById("tbgrid").innerHTML='<p class="sub">No 3-bet spots in this period.</p>';document.getElementById("tbmeta").textContent="";return;}
+  if(!tbHero||!A.tb[tbHero])tbHero=heroes[0];
+  document.getElementById("tbtabs").innerHTML=heroes.map(hp=>{const sp=Object.values(A.tb[hp]).reduce((a,m)=>a+m.spots,0);
+    return `<div class="tab ${hp===tbHero?'active':''}" data-h="${hp}">${hp}<span class="r">${sp} spots</span></div>`;}).join("");
+  document.querySelectorAll("#tbtabs .tab").forEach(t=>t.onclick=()=>{tbHero=t.dataset.h;tbTbet=null;renderThreebet();});
+  let ops=Object.keys(A.tb[tbHero]);
+  if(!tbTbet||!ops.includes(tbTbet))tbTbet=ops.slice().sort((a,b)=>A.tb[tbHero][b].spots-A.tb[tbHero][a].spots)[0];
+  ops=ops.sort((a,b)=>POSORD.indexOf(a)-POSORD.indexOf(b));
+  const sel=document.getElementById("tbopener");
+  sel.innerHTML=ops.map(o=>`<option value="${o}" ${o===tbTbet?'selected':''}>vs ${o} 3-bettor (${A.tb[tbHero][o].spots} spots)</option>`).join("");
+  sel.onchange=()=>{tbTbet=sel.value;renderTbGrid();};renderTbGrid();}
+function renderTbGrid(){const M=A.tb[tbHero][tbTbet],R=tbDef(tbHero,tbTbet);
+  const cont=new Set(R.cont),four=new Set(R.fourbet);
+  document.getElementById("tbmeta").textContent=`${M.spots} spots · ${M.rate.toFixed(0)}% deviation · GTO continues ${cont.size} combos (${four.size} as 4-bet)`;
+  let h='<table class="grid">';
+  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j);
+    const c=M.cells[hd]||{ca:0,fb:0,f:0,dev:0};const tot=c.ca+c.fb+c.f;
+    const cls=four.has(hd)?"t":cont.has(hd)?"c":"f";const g=cls==="t"?"4-bet":cls==="c"?"call":"fold";
+    const gs=gtoSplit((DATA.tb_freq[tbHero]||{})[tbTbet],hd);
+    const badge=c.dev>0?`<div class="devbadge">${c.dev}</div>`:"";const cn=tot>0?`<div class="cnt">${c.fb}/${c.ca}/${c.f}</div>`:"";
+    h+=`<td data-h="${hd}" style="background:${splitBg(gs)}" title="${hd} | GTO ${gtoTip(gs)} | your 4bet ${c.fb}, call ${c.ca}, fold ${c.f}${tot?' (click to replay)':''}">${badge}<div class="lbl">${hd}</div>${cn}</td>`;}
+    h+="</tr>";}h+="</table>";const el=document.getElementById("tbgrid");el.innerHTML=h;
+  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{const ids=exampleListTB(tbHero,tbTbet,td.dataset.h);if(ids.length)openReplay(ids[0],ids);});}
+
+// hole cards tab
+let holeSel=null,holeMode="vp";
+function selectHoleCell(hd){const o=A.hole[hd],el=document.getElementById("holedetail");
+  if(!o||!o.count){el.innerHTML=`<span class="sub"><b>${hd}</b>: never dealt in this period.</span>`;return;}
+  const ids=exampleListHole(hd);
+  el.innerHTML=`<b>${hd}</b> — played <b>${o.count}</b> ${o.count===1?"time":"times"} · net <span class="${o.net>=0?'pos':'neg'} mono">${fmt(o.net)}</span>`+
+    `<div class="hd-row"><span>Biggest win: <a data-id="${o.best.id}" class="pos mono">${fmt(o.best.net)}</a></span>`+
+    `<span>Biggest loss: <a data-id="${o.worst.id}" class="neg mono">${fmt(o.worst.net)}</a></span>`+
+    `<button class="drbtn" id="replayall">&#9654; Replay all ${o.count} hands</button></div>`;
+  el.querySelectorAll("a[data-id]").forEach(a=>a.onclick=()=>openReplay(a.dataset.id,ids));
+  document.getElementById("replayall").onclick=()=>{if(ids.length)openReplay(ids[0],ids);};}
+function renderHole(){const g=A.hole;let maxC=0,maxH="-";
+  for(const hd in g){if(g[hd].count>maxC){maxC=g[hd].count;maxH=hd;}}
+  const bt=document.getElementById("holetoggle");
+  bt.textContent=holeMode==="vp"?"View: hands you played":"View: every hand dealt";
+  bt.onclick=()=>{holeMode=holeMode==="vp"?"all":"vp";holeSel=null;A.hole=computeHole(A.hs);renderHole();document.getElementById("holedetail").innerHTML='<span class="sub">Click a hand in the grid to see its stats, biggest win/loss, and replay every time you had it.</span>';};
+  const modeTxt=holeMode==="vp"?"Hands you voluntarily played (VPIP)":"Every hand you were dealt";
+  document.getElementById("holehead").innerHTML=maxC?`${modeTxt}. Most played: <b>${maxH}</b> — ${maxC} times. Each cell shows net $ | times played (green win / red loss).`:"No hands in this period.";
+  let h='<table class="grid">';
+  for(let i=0;i<13;i++){h+="<tr>";for(let j=0;j<13;j++){const hd=handAt(i,j),o=g[hd]||{count:0,net:0};
+    const col=o.net>=0?'#3fb95022':'#f8514922';
+    const sel=hd===holeSel?' style="outline:2px solid var(--accent);outline-offset:-2px"':'';
+    h+=`<td class="holecell" data-h="${hd}"${sel} title="${hd} | played ${o.count} | net ${fmt(o.net)}">`+
+       `<div class="freqfill" style="height:100%;background:${o.count?col:'transparent'}"></div>`+
+       `<div class="lbl">${hd}</div>${o.count?`<div class="hnet ${o.net>=0?'pos':'neg'}">${fmt(o.net)} | ${o.count}</div>`:''}</td>`;}
+    h+="</tr>";}h+="</table>";const el=document.getElementById("holegrid");el.innerHTML=h;
+  el.querySelectorAll("td").forEach(td=>td.onclick=()=>{holeSel=td.dataset.h;renderHole();});
+  if(holeSel)selectHoleCell(holeSel);}
+
+// results tab
+function renderResults(){const rp=document.getElementById("rposf").value,so=document.getElementById("rsort").value;
+  let rows=A.hs.filter(h=>!rp||h.pos===rp);rows=rows.slice().sort((a,b)=>so==="win"?b.net-a.net:a.net-b.net);
+  const net=A.hs.reduce((a,h)=>a+h.net,0),w=A.hs.filter(h=>h.net>0).reduce((a,h)=>a+h.net,0),l=A.hs.filter(h=>h.net<0).reduce((a,h)=>a+h.net,0);
+  document.getElementById("rescards").innerHTML=[["Net (range)",fmt(net),net>=0?"pos":"neg"],["Won",fmt(w),"pos"],["Lost",fmt(l),"neg"],["Hands",A.hs.length,""]]
+    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono ${c[2]}">${c[1]}</div></div>`).join("");
+  document.getElementById("resbody").innerHTML=rows.slice(0,200).map(h=>`<tr data-id="${h.id}"><td>${h.pos||"-"}</td><td class="lbl">${h.h}</td>`+
+    `<td class="resnet ${h.net>=0?'pos':'neg'} mono">${fmt(h.net)}</td><td class="mono sub">${h.dt.replace("T"," ").slice(0,16)}</td><td class="play">&#9654;</td></tr>`).join("");
+  const _rids=rows.slice(0,200).map(h=>h.id);
+  document.querySelectorAll("#resbody tr").forEach(tr=>tr.onclick=()=>openReplay(tr.dataset.id,_rids));
+  document.getElementById("rcount").textContent=`${rows.length} hands (showing top 200)`;}
+document.getElementById("rposf").onchange=renderResults;document.getElementById("rsort").onchange=renderResults;
+
+// showdown tab
+function renderShowdown(){const rp=document.getElementById("sdposf").value,so=document.getElementById("sdsort").value;
+  let rows=A.hs.filter(h=>h.sd&&(!rp||h.pos===rp));
+  rows=rows.slice().sort((a,b)=>so==="win"?b.net-a.net:so==="loss"?a.net-b.net:b.ts-a.ts);
+  const won=rows.filter(h=>h.net>0).length,net=rows.reduce((a,h)=>a+h.net,0);
+  const all=A.hs.filter(h=>h.sd);
+  document.getElementById("sdcards").innerHTML=[["Showdowns",all.length],
+    ["Showdowns won",all.length?won+" ("+(100*all.filter(h=>h.net>0).length/all.length).toFixed(0)+"%)":"-"],
+    ["Showdown net",fmt(all.reduce((a,h)=>a+h.net,0)),all.reduce((a,h)=>a+h.net,0)>=0?"pos":"neg"]]
+    .map(c=>`<div class="card"><div class="k">${c[0]}</div><div class="v mono ${c[2]||''}">${c[1]}</div></div>`).join("");
+  document.getElementById("sdbody").innerHTML=rows.slice(0,200).map(h=>`<tr data-id="${h.id}"><td>${h.pos||"-"}</td><td class="lbl">${h.h}</td>`+
+    `<td class="mono">${boardStr(h.id)}</td><td class="resnet ${h.net>=0?'pos':'neg'} mono">${fmt(h.net)}</td>`+
+    `<td class="mono sub">${h.dt.replace("T"," ").slice(0,16)}</td><td class="play">&#9654;</td></tr>`).join("");
+  const _sids=rows.slice(0,200).map(h=>h.id);
+  document.querySelectorAll("#sdbody tr").forEach(tr=>tr.onclick=()=>openReplay(tr.dataset.id,_sids));
+  document.getElementById("sdcount").textContent=`${rows.length} showdowns`;}
+document.getElementById("sdposf").onchange=renderShowdown;document.getElementById("sdsort").onchange=renderShowdown;
+
+// position filter dropdowns
+["fpos","rposf","sdposf"].forEach(id=>document.getElementById(id).innerHTML='<option value="">All positions</option>'+POSORD.map(p=>`<option>${p}</option>`).join(""));
+
+// top tabs
+document.querySelectorAll(".toptab").forEach(t=>t.onclick=()=>{
+  document.querySelectorAll(".toptab").forEach(x=>x.classList.toggle("active",x===t));
+  ["leaks","facing","threebet","results","showdown","holecards"].forEach(n=>document.getElementById("pane-"+n).classList.toggle("hidden",t.dataset.t!==n));});
+
+function updateInfo(){const days=Object.keys(A.day).length;
+  document.getElementById("drinfo").textContent=range?`${range.from} to ${range.to} (${days} day${days!==1?"s":""}, ${A.hs.length} hands)`:`all ${DAYS.length} days`;}
+function rerenderAll(){recompute();renderCards();renderDayTrend();renderRfiTabs();renderRfiGrid();renderFlags();renderFacing();renderThreebet();renderResults();renderShowdown();renderHole();updateInfo();}
+
+document.getElementById("sub").textContent=`${DATA.total_hands} hands - ${DATA.files} files - generated ${DATA.generated}`;
+document.getElementById("note").innerHTML=
+  "Preflop ranges: solver-derived 6-max 100bb charts (pekarstas GGPoker pack) for RFI, facing an open, and facing a 3-bet, with the older hand-authored ranges as fallback where the pack lacks a spot. Borderline hands the solver plays both ways are not flagged. "+
+  "The replayer now shows a postflop readout — board texture, your made hand, and (heads-up only) your equity vs an estimated villain range. That equity is an approximation: the villain range is inferred from preflop action, and stack depth is treated as 100bb. "+
+  "4-bet pots, multiway and limped pots are replayable but not GTO-judged preflop. Net = chips collected minus chips in (after rake). Use the Period control to compare days. Each grid cell also shows the GTO action split (R=raise/3bet/4bet, C=call, F=fold, A=all-in) above your own counts — the pack encodes these as pure (100%) or even (50/50) splits, not fine-grained frequencies. Edit tools/gto_ranges.py to tune ranges.";
+
+// ---------- REPLAYER ----------
+const SLOTS=[[50,90],[89,70],[92,32],[50,9],[11,32],[11,70]];
+const BETPOS=[[50,74],[74,64],[75,42],[50,26],[26,42],[26,64]];
+const BTNPOS=[[63,80],[80,62],[80,45],[40,20],[22,45],[22,62]];
+let RH=null,RSTEP=0,FRAMES=[];
+function buildFrames(h){const order=["preflop","flop","turn","river"];const by={preflop:[],flop:[],turn:[],river:[]};
+  h.actions.forEach(a=>{(by[a.street]||by.preflop).push(a);});const fr=[];
+  order.forEach(st=>{if(st!=="preflop"){const bc=st==="flop"?h.board.flop:st==="turn"?h.board.turn:h.board.river;
+    if((bc&&bc.length)||by[st].length)fr.push({type:"deal",street:st});}
+    by[st].forEach(a=>fr.push({type:"action",street:st,a}));});return fr;}
+let PLAYLIST=[],PLIDX=0;
+function loadHand(id){RH=DATA.replays[id];if(!RH)return;RSTEP=0;FRAMES=buildFrames(RH);
+  const h=RH.seats.find(s=>s.is_hero);const holeTxt=h&&h.hole?h.hole.map(c=>c[0]+suit(c[1])).join(" "):"";
+  document.getElementById("mtitle").innerHTML=`${RH.hero_pos} - you hold ${holeTxt} - <span class="mono ${RH.net>=0?'pos':'neg'}">${fmt(RH.net)}</span> - $${RH.sb}/$${RH.bb}`;
+  updateHandNav();renderReplay();}
+function openReplay(id,list){PLAYLIST=(list&&list.length)?list.slice():[id];PLIDX=Math.max(0,PLAYLIST.indexOf(id));
+  document.getElementById("ovl").classList.add("show");loadHand(PLAYLIST[PLIDX]);}
+function updateHandNav(){const nav=document.getElementById("handnav");
+  if(PLAYLIST.length>1){nav.classList.remove("hidden");
+    document.getElementById("handidx").textContent=`Hand ${PLIDX+1} of ${PLAYLIST.length}`;
+    document.getElementById("phand").disabled=PLIDX===0;document.getElementById("nhand").disabled=PLIDX===PLAYLIST.length-1;
+  }else nav.classList.add("hidden");}
+function handStep(d){const i=PLIDX+d;if(i>=0&&i<PLAYLIST.length){PLIDX=i;loadHand(PLAYLIST[i]);}}
+document.getElementById("phand").onclick=()=>handStep(-1);
+document.getElementById("nhand").onclick=()=>handStep(1);
+document.getElementById("close").onclick=()=>document.getElementById("ovl").classList.remove("show");
+document.getElementById("ovl").onclick=e=>{if(e.target.id==="ovl")document.getElementById("ovl").classList.remove("show");};
+document.getElementById("prev").onclick=()=>{if(RSTEP>0){RSTEP--;renderReplay();}};
+document.getElementById("next").onclick=()=>{if(RSTEP<FRAMES.length){RSTEP++;renderReplay();}};
+document.addEventListener("keydown",e=>{if(!document.getElementById("ovl").classList.contains("show"))return;
+  if(e.key==="ArrowRight")document.getElementById("next").click();
+  if(e.key==="ArrowLeft")document.getElementById("prev").click();
+  if(e.key==="ArrowUp"){e.preventDefault();handStep(-1);}
+  if(e.key==="ArrowDown"){e.preventDefault();handStep(1);}
+  if(e.key==="Escape")document.getElementById("close").click();});
+function boardForStreet(st){const b=RH.board;if(st==="preflop")return[];if(st==="flop")return b.flop.slice();
+  if(st==="turn")return b.flop.concat(b.turn);return b.flop.concat(b.turn,b.river);}
+function buildState(upto){const P={};RH.seats.forEach(s=>P[s.name]={...s,folded:false,street:0,total:0});
+  let pot=0,cur="preflop",last=null,lastText="",anno=false,deal=null;
+  const heroIdx=FRAMES.findIndex(f=>f.type==="action"&&f.a.name==="Hero");
+  for(let i=0;i<upto;i++){const f=FRAMES[i];
+    if(f.street!==cur){cur=f.street;RH.seats.forEach(s=>P[s.name].street=0);}
+    if(f.type==="deal"){if(i===upto-1){last=null;deal=f.street;lastText="";anno=false;}continue;}
+    const a=f.a,p=P[a.name];if(!p)continue;
+    if(a.verb==="fold")p.folded=true;
+    else if(a.verb==="post"||a.verb==="call"||a.verb==="bet"){p.street+=a.amt;p.total+=a.amt;pot+=a.amt;}
+    else if(a.verb==="raise"||a.verb==="straddle"){const add=a.to-p.street;p.street=a.to;p.total+=add;pot+=add;}
+    else if(a.verb==="refund"){p.street-=a.amt;p.total-=a.amt;pot-=a.amt;}
+    if(i===upto-1){last=a.name;lastText=a.text;anno=(a.name==="Hero"&&i===heroIdx);deal=null;}}
+  return {P,pot,cur,last,lastText,anno,deal};}
+function correctPlay(r){if(r.kind==="3bet")return r.rec==="CONTINUE"?"Continue (call or 4-bet)":"Fold";
+  if(r.kind==="RFI")return r.rec==="LIMP"?"Limp/complete, raise or fold all fine (SB)":r.rec==="MIX"?"Mixed — open-raise or fold are both fine":r.rec==="RAISE"?"Open-raise":"Fold";
+  const R=vsDef(r.pos,r.opener);if(R.threebet.includes(r.hand))return "3-bet";
+  if(R.defend.includes(r.hand))return "Call (3-bet also fine)";return "Fold";}
+function renderReplay(){const st=buildState(RSTEP);const seatsEl=document.getElementById("seats");seatsEl.innerHTML="";
+  const btnSeat=RH.seats.find(s=>s.pos==="BTN");const done=RSTEP>=FRAMES.length;
+  RH.seats.forEach(s=>{const ps=st.P[s.name];const[x,y]=SLOTS[s.slot%6];
+    const cls=["seat",s.is_hero?"hero":"",ps.folded?"folded":"",(st.last===s.name&&RSTEP>0)?"acting":""].join(" ");
+    let cards="";
+    if(s.hole&&(s.is_hero||done||st.cur==="done"))cards=`<div class="holecards">${s.hole.map(c=>cardHTML(c,"pcard")).join("")}</div>`;
+    else if(!ps.folded)cards=`<div class="holecards"><div class="pcard back">x</div><div class="pcard back">x</div></div>`;
+    const d=document.createElement("div");d.className=cls;d.style.left=x+"%";d.style.top=y+"%";
+    d.innerHTML=`<div class="seatbox"><div class="seatname">${s.is_hero?"You":s.name}</div><div class="seatpos">${s.pos}</div><div class="seatstack">$${(s.stack-ps.total).toFixed(2)}</div>${cards}</div>`;
+    seatsEl.appendChild(d);
+    if(ps.street>0){const[bx,by]=BETPOS[s.slot%6];const bd=document.createElement("div");bd.className="bet";bd.style.left=bx+"%";bd.style.top=by+"%";bd.textContent="$"+ps.street.toFixed(2);seatsEl.appendChild(bd);}});
+  if(btnSeat){const[bx,by]=BTNPOS[btnSeat.slot%6];const bc=document.createElement("div");bc.className="btnchip";bc.style.left=bx+"%";bc.style.top=by+"%";bc.textContent="D";seatsEl.appendChild(bc);}
+  const board=boardForStreet(st.cur);
+  document.getElementById("board").innerHTML=board.map(c=>cardHTML(c,"bcard")).join("")||'<span class="sub" style="font-size:11px">preflop</span>';
+  document.getElementById("pot").textContent="Pot $"+st.pot.toFixed(2);
+  const rp=document.getElementById("runspanel");
+  if(RH.runs&&RH.runs.length>1){
+    rp.innerHTML=`<div class="runshead">Ran it ${RH.runs.length} times</div>`+RH.runs.map((r,i)=>{
+      const cs=r.flop.concat(r.turn,r.river);
+      return `<div class="runrow"><span class="runtag ${r.heroWon?'rwin':'rloss'}">Run ${i+1} ${r.heroWon?'won':'lost'}</span>${cs.map(c=>cardHTML(c,"rcard")).join("")}</div>`;}).join("");
+  }else rp.innerHTML="";
+  const CAP={flop:"Flop",turn:"Turn",river:"River"};
+  document.getElementById("actionbar").textContent=RSTEP===0?"Hand start - press Next":
+    st.deal?`${CAP[st.deal]} dealt: ${boardForStreet(st.deal).map(c=>c[0]+suit(c[1])).join(" ")}`:
+    (st.last?`${st.last==="Hero"?"You":st.last} (${st.P[st.last].pos}) ${st.lastText}`:"");
+  // postflop readout: board texture, Hero made hand, equity vs estimated villain range
+  const pfEl=document.getElementById("postflop");const pf=RH.postflop;
+  if(pf&&pf.streets&&pf.streets[st.cur]){const s=pf.streets[st.cur];const parts=[];
+    if(s.made)parts.push(`You have <b>${s.made}</b>`);
+    if(s.texture)parts.push(`board: ${s.texture}`);
+    if(s.eq!=null){const vp=pf.villain&&pf.villain.pos?pf.villain.pos:"villain";
+      parts.push(`equity vs ${vp} range: <b>${s.eq}%</b><span class="eqbar" style="width:${Math.round(s.eq*0.6)}px"></span>`);}
+    else if(pf.multiway)parts.push(`<span class="sub">multiway pot — equity not estimated</span>`);
+    pfEl.innerHTML=`<div class="postflop">${CAP[st.cur]||""} · ${parts.join(" · ")}</div>`;
+  }else pfEl.innerHTML="";
+  const aw=document.getElementById("annowrap");aw.innerHTML="";
+  if(RH.judgement){const r=RH.judgement;
+    if(r.kind==="unjudged"){aw.innerHTML=`<div class="anno info"><b>Not GTO-judged:</b> this is a ${r.reason}. The tool scores RFI (open/fold) and facing a single raise; 3-bet/4-bet pots, multiway and limped pots aren't scored yet. You ${r.action} <b>${r.hand}</b>.</div>`;}
+    else{let v,cls=r.type;
+    if(r.kind==="3bet"){const vs=`vs the ${r.tbet} 3-bet`;
+      if(r.type==="ok"){cls="ok";v=r.action==="FOLD"?`You fold <b>${r.hand}</b> ${vs} — matches GTO (fold).`:`You ${r.action==="4BET"?"4-bet":"call"} <b>${r.hand}</b> ${vs} — matches GTO (continue).`;}
+      else if(r.type==="too_tight")v=`You folded <b>${r.hand}</b> ${vs} — GTO continues (call/4-bet). Too tight.`;
+      else v=`You ${r.action==="4BET"?"4-bet":"called"} <b>${r.hand}</b> ${vs} — GTO folds this. Too loose.`;}
+    else if(r.type==="ok"){cls="ok";
+      if(r.kind==="RFI"){const mixed=(r.rec==="MIX"||r.rec==="LIMP")?" (a mixed hand — several lines fine)":"";
+        v=r.action==="RAISE"?`You open <b>${r.hand}</b> from ${r.pos} — matches GTO (open-raise)${mixed}.`:r.action==="LIMP"?`You limp <b>${r.hand}</b> from the SB — matches GTO (limp/complete)${mixed}.`:`You fold <b>${r.hand}</b> from ${r.pos} — matches GTO (fold)${mixed}.`;}
+      else v=r.action==="FOLD"?`You fold <b>${r.hand}</b> vs the ${r.opener} open — matches GTO (fold).`:`You ${r.action==="3BET"?"3-bet":"call"} <b>${r.hand}</b> vs the ${r.opener} open — matches GTO (defend).`;}
+    else if(r.kind==="RFI"){v=r.type==="too_tight"?`You folded <b>${r.hand}</b> — GTO opens this from ${r.pos}. Too tight.`:
+        r.type==="too_loose"?`You opened <b>${r.hand}</b> — GTO folds this from ${r.pos}. Too loose.`:
+        `You limped <b>${r.hand}</b> — GTO never limps; it ${r.rec==="RAISE"?"raises":"folds"}.`;}
+    else{v=r.type==="too_tight"?`You folded <b>${r.hand}</b> vs the ${r.opener} open — GTO defends (call/3-bet). Too tight.`:
+        `You ${r.action==="3BET"?"3-bet":"called"} <b>${r.hand}</b> vs the ${r.opener} open — GTO folds this. Too loose.`;}
+    aw.innerHTML=`<div class="anno ${cls}"><b>GTO:</b> ${v}<div style="margin-top:6px"><b>Correct play:</b> ${correctPlay(r)}</div></div>`;}}
+  document.getElementById("stepc").textContent=`Step ${RSTEP} / ${FRAMES.length}`;
+  document.getElementById("prev").disabled=RSTEP===0;document.getElementById("next").disabled=done;}
+
+rerenderAll();
+</script></body></html>

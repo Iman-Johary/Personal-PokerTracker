@@ -1,0 +1,30 @@
+# --- Private / personal data (never publish) ---
+# personal GGPoker hand-history exports
+history/
+# personal poker library
+books/
+# reference range screenshots
+screenshots/
+# generated output — contains personal hand data inline
+dashboard.html
+# local project notes (kept private)
+CLAUDE.md
+# OneDrive sync scratch file
+_synctest.txt
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+
+# --- Editor / OS cruft ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
